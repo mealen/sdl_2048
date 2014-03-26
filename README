@@ -1,0 +1,5 @@
+SDL 2048
+
+This is an 2048 clone using c/++ and SDL2.
+
+It does require c++11, but it can, and should be removed.
