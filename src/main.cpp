@@ -97,7 +97,6 @@ void moveNumbers(int numbers[4][4], int direction) {
         logMessage("moving down ");
         for(int i=0; i<4; i++) {
             int coloumn[4] = {numbers[i][0],numbers[i][2],numbers[i][2],numbers[i][3]};
-            logMessage("Before move2 ");
             moveSingleArray2(coloumn,4);
             numbers[i][0] = coloumn[0];
             numbers[i][1] = coloumn[1];
@@ -169,6 +168,41 @@ void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y, SDL_Rect *
     renderTexture(tex, ren, dst, clip);
 }
 
+int insertNumber(int numbers[4][4]) {
+    logMessage("insert call");
+    int newNumber;
+    if(rand() % 5 == 4) // %20 chance
+        newNumber = 4;
+    else
+        newNumber = 2;
+
+    int emptyCellCount = 0;
+    for(int i=0; i<4; i++) {
+        for(int j=0; j<4; j++) {
+            if(numbers[i][j] == 0)
+                emptyCellCount++;
+        }
+    }
+    if (emptyCellCount == 0)
+        return 1;
+
+    int insertCell = rand() % emptyCellCount;
+
+    emptyCellCount = 0; //now find the element and set
+    for(int i=0; i<4; i++) {
+        for(int j=0; j<4; j++) {
+            if(numbers[i][j] == 0)
+                if(emptyCellCount == insertCell) {
+                    numbers[i][j]= newNumber;
+                    return 0;
+                } else
+                    emptyCellCount++;
+        }
+    }
+
+
+}
+
 
 int main(int argc, char **argv) {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -227,46 +261,54 @@ int main(int argc, char **argv) {
     int moveDirection=0;//2 down, 8 up, 4 left, 6 right.
 
     SDL_Event e;
+    int isMoved=0;
     while (!quit) {
-        while(SDL_PollEvent(&e)) {
-            if(e.type == SDL_QUIT)
+        SDL_WaitEvent(&e);
+        if(e.type == SDL_QUIT)
+            quit=true;
+        if(e.type == SDL_KEYDOWN) {
+            switch (e.key.keysym.sym) {
+            case SDLK_ESCAPE:
+                quit = true;
+                break;
+            case SDLK_q:
                 quit=true;
-            if(e.type == SDL_KEYDOWN) {
-                switch (e.key.keysym.sym) {
-                case SDLK_ESCAPE:
-                    quit = true;
-                    break;
-                case SDLK_q:
-                    quit=true;
-                    break;
-                case SDLK_UP:
-                    moveDirection = 8;
-                    moveNumbers(currentNumbersMatrix,moveDirection);
-                    break;
-                case SDLK_DOWN:
-                    moveDirection = 2;
-                    moveNumbers(currentNumbersMatrix,moveDirection);
-                    break;
+                break;
+            case SDLK_UP:
+                moveDirection = 8;
+                isMoved = 1;
+                moveNumbers(currentNumbersMatrix,moveDirection);
+                break;
+            case SDLK_DOWN:
+                moveDirection = 2;
+                isMoved = 1;
+                moveNumbers(currentNumbersMatrix,moveDirection);
+                break;
 
-                case SDLK_LEFT:
-                    moveDirection = 4;
-                    moveNumbers(currentNumbersMatrix,moveDirection);
-                    break;
+            case SDLK_LEFT:
+                moveDirection = 4;
+                isMoved = 1;
+                moveNumbers(currentNumbersMatrix,moveDirection);
+                break;
 
-                case SDLK_RIGHT:
-                    moveDirection = 6;
-                    moveNumbers(currentNumbersMatrix,moveDirection);
-                    break;
+            case SDLK_RIGHT:
+                moveDirection = 6;
+                isMoved = 1;
+                moveNumbers(currentNumbersMatrix,moveDirection);
+                break;
 
-                default:
-                    break;
+            default:
+                break;
 
-                }
 
             }
         }
 
-
+        //move is done, so add a number to a empty cell
+        if(isMoved == 1){
+            insertNumber(currentNumbersMatrix);
+        }
+        isMoved=0;
         SDL_RenderClear(renderer);
         renderTexture(background,renderer,0,0, NULL);
 
