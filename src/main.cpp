@@ -203,7 +203,7 @@ int main(int argc, char **argv) {
     SDL_Texture* background = loadTexture("./res/background.png",renderer);
     SDL_Texture* numbers = loadTexture("./res/numbers.png",renderer);
 
-    SDL_Color color = {255,255,255};
+    SDL_Color color = {50,50,50};
     //SDL_Texture* text = renderText("Hello World", "./res/sample.ttf",color, 16, renderer);
 
     if(background == nullptr || numbers == nullptr) {
@@ -285,7 +285,9 @@ int main(int argc, char **argv) {
                     int ypos=TILE_BASE_Y + TILE_BASE_MARGIN + j * (TILE_BASE_MARGIN + TILE_HEIGHT);
                     //std::cout << "xpos = " << xpos << std::endl;
                     //std::cout << "ypos = " << ypos << std::endl;
+                    SDL_Texture* numberText = renderText(std::to_string(currentNumbersMatrix[i][j]),"./res/Gauge-Regular.ttf",color,72, renderer);
                     renderTexture(numbers,renderer,xpos,ypos, &clips[0]);
+                    renderTexture(numberText,renderer,xpos + 20 ,ypos + 20, NULL);//the font is smaller than the tile
                     //std::cout << "printed using" << useClip%4 << std::endl;
 //                    SDL_Delay(1000);
 //                    SDL_RenderPresent(renderer);
