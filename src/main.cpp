@@ -18,8 +18,15 @@ const int TILE_BASE_Y = 15;
 const int TILE_BASE_WIDTH = 440;
 const int TILE_BASE_HEIGHT = 440;
 const int TILE_BASE_MARGIN = 10;
+const int ANIM_SPEED = 10;
 
 bool quit = false;
+
+typedef struct {
+    SDL_Renderer* renderer;
+    SDL_Texture* background;
+    SDL_Texture* numberTiles;
+} RenderSystem;
 
 void logMessage(const std::string &msg) {
     if(DEBUG == 1) {
@@ -248,17 +255,19 @@ int insertNumber(int numbers[4][4]) {
     emptyCellCount = 0; //now find the element and set
     for(int i=0; i<4; i++) {
         for(int j=0; j<4; j++) {
-            if(numbers[i][j] == 0)
+            if(numbers[i][j] == 0){
                 if(emptyCellCount == insertCell) {
                     numbers[i][j]= newNumber;
                     return 1;
-                } else
+                } else {
                     emptyCellCount++;
+                }
+            }
         }
     }
 }
 
-void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* numberTiles,  int numbers[4][4],int isGameOver, int score) {
+void renderGame(RenderSystem renderSystem,  int numbers[4][4],int isGameOver, int score) {
     //TODO these calculations are redudant
     SDL_Rect clips[12];
     for(int i=0; i<12; ++i) {
@@ -270,8 +279,8 @@ void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* nu
 
     SDL_Color color = {50,50,50};
 
-    SDL_RenderClear(renderer);
-    renderTexture(background,renderer,0,0, NULL);
+    SDL_RenderClear(renderSystem.renderer);
+    renderTexture(renderSystem.background,renderSystem.renderer,0,0, NULL);
 
     for(int i=0; i < 4; i++) {
         for(int j=0; j < 4; j++) {
@@ -279,23 +288,23 @@ void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* nu
                 int xpos=TILE_BASE_X + TILE_BASE_MARGIN + i * (TILE_BASE_MARGIN + TILE_WIDTH);
                 int ypos=TILE_BASE_Y + TILE_BASE_MARGIN + j * (TILE_BASE_MARGIN + TILE_HEIGHT);
                 int clipValue = log2(numbers[i][j]) -1 ;//since 2 is the first one but it is 2^^1 not 0.
-                renderTexture(numberTiles,renderer,xpos,ypos, &clips[clipValue]);
+                renderTexture(renderSystem.numberTiles,renderSystem.renderer,xpos,ypos, &clips[clipValue]);
                 //SDL_Texture* numberText = renderText(std::to_string(numbers[i][j]),"./res/Gauge-Regular.ttf",color,72, renderer);
                 //renderTexture(numberText,renderer,xpos + 20 ,ypos + 20, NULL);//the font is smaller than the tile
             }
         }
     }
     //render score
-    SDL_Texture* scoreText = renderText(std::to_string(score),"./res/Gauge-Regular.ttf",color,48, renderer);
-    renderTexture(scoreText,renderer, 500 ,170, NULL);//the font is smaller than the tile
+    SDL_Texture* scoreText = renderText(std::to_string(score),"./res/Gauge-Regular.ttf",color,48, renderSystem.renderer);
+    renderTexture(scoreText,renderSystem.renderer, 500 ,170, NULL);//the font is smaller than the tile
 
     if(isGameOver == 1) {
         color = {150,50,50};
-        SDL_Texture* gameOverText = renderText("Game Over!","./res/Gauge-Regular.ttf",color,72, renderer);
-        renderTexture(gameOverText,renderer, 40 ,SCREEN_HEIGHT / 2 - 20, NULL);//the font is smaller than the tile
+        SDL_Texture* gameOverText = renderText("Game Over!","./res/Gauge-Regular.ttf",color,72, renderSystem.renderer);
+        renderTexture(gameOverText,renderSystem.renderer, 40 ,SCREEN_HEIGHT / 2 - 20, NULL);//the font is smaller than the tile
     }
 
-    SDL_RenderPresent(renderer);
+    SDL_RenderPresent(renderSystem.renderer);
 }
 
 void initBoard(int numbers[4][4]) {
@@ -347,9 +356,12 @@ int backupNumbersMatrix(int original[4][4], int backup[4][4]) {
             backup[i][j] = original[i][j];
         }
     }
+    return 0;
 }
 
 int main(int argc, char **argv) {
+    RenderSystem currentRS;
+
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
         return 1;
@@ -362,8 +374,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    if (renderer == nullptr) {
+    currentRS.renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (currentRS.renderer == nullptr) {
         logSDLError(std::cout, "SDL_CreateRenderer");
         return 1;
     }
@@ -379,11 +391,11 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    SDL_Texture* background = loadTexture("./res/background.png",renderer);
-    SDL_Texture* numbers = loadTexture("./res/numbers.png",renderer);
+    currentRS.background = loadTexture("./res/background.png",renderer);
+    currentRS.numbers = loadTexture("./res/numbers.png",renderer);
 
 
-    if(background == nullptr || numbers == nullptr) {
+    if(currentRS.background == nullptr || currentRS.numbers == nullptr) {
         logSDLError(std::cout, "LoadTexture");
         return 4;
     }
@@ -403,7 +415,7 @@ int main(int argc, char **argv) {
     int isMoved=0;
 
     //initial render
-    renderGame(renderer, background, numbers, currentNumbersMatrix, isGameOver, score);
+    renderGame(currentRS, currentNumbersMatrix, isGameOver, score);
     while (!quit) {
         while(SDL_PollEvent(&e)) {
             ;
@@ -461,7 +473,7 @@ int main(int argc, char **argv) {
                 isGameOver=1;
             }
             //don't move this over insert number.
-            renderGame(renderer, background, numbers, currentNumbersMatrix, isGameOver, score);
+            renderGame(currentRS, currentNumbersMatrix, isGameOver, score);
             isMoved=0;
         } else {
 
@@ -476,9 +488,9 @@ int main(int argc, char **argv) {
 
     }
 
-
-    SDL_DestroyTexture(background);
-    SDL_DestroyRenderer(renderer);
+    SDL_DestroyTexture(currentNumbersMatrix.numberTiles);
+    SDL_DestroyTexture(currentNumbersMatrix.background);
+    SDL_DestroyRenderer(currentNumbersMatrix.renderer);
     SDL_DestroyWindow(win);
     SDL_Quit();
 
