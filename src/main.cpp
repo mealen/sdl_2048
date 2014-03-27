@@ -264,7 +264,7 @@ int insertNumber(int numbers[4][4]) {
     }
 }
 
-void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* numberTiles,  int numbers[4][4]) {
+void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* numberTiles,  int numbers[4][4],int isGameOver) {
     //TODO these calculations are redudant
     SDL_Rect clips[12];
     for(int i=0; i<12; ++i) {
@@ -284,20 +284,21 @@ void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* nu
             if(numbers[i][j] > 0) {
                 int xpos=TILE_BASE_X + TILE_BASE_MARGIN + i * (TILE_BASE_MARGIN + TILE_WIDTH);
                 int ypos=TILE_BASE_Y + TILE_BASE_MARGIN + j * (TILE_BASE_MARGIN + TILE_HEIGHT);
-                //std::cout << "xpos = " << xpos << std::endl;
-                //std::cout << "ypos = " << ypos << std::endl;
                 SDL_Texture* numberText = renderText(std::to_string(numbers[i][j]),"./res/Gauge-Regular.ttf",color,72, renderer);
                 int clipValue = log2(numbers[i][j]) -1 ;//since 2 is the first one but it is 2^^1 not 0.
                 renderTexture(numberTiles,renderer,xpos,ypos, &clips[clipValue]);
                 renderTexture(numberText,renderer,xpos + 20 ,ypos + 20, NULL);//the font is smaller than the tile
-                //std::cout << "printed using" << useClip%4 << std::endl;
-//                    SDL_Delay(1000);
-//                    SDL_RenderPresent(renderer);
+
             }
         }
     }
 
-    //renderTexture(text,renderer,0,0);
+    if(isGameOver == 1) {
+        color = {150,50,50};
+        SDL_Texture* gameOverText = renderText("Game Over!","./res/Gauge-Regular.ttf",color,72, renderer);
+        renderTexture(gameOverText,renderer, 40 ,SCREEN_HEIGHT / 2 - 20, NULL);//the font is smaller than the tile
+    }
+
     SDL_RenderPresent(renderer);
 }
 
@@ -310,6 +311,33 @@ void initBoard(int numbers[4][4]) {
 }
 
 void endGame(int numbers[4][4]) {
+
+}
+/**
+* it checks if the game is over.
+*
+*/
+int checkGameOver(int numbers[4][4]) {
+    //TODO optimise this part
+
+    //if there are 2 same adjent cell, it is not over. This for
+    for(int i = 0; i< 3; i++) {
+        for(int j = 0; j< 3; j++) {
+            if(numbers[i][j] == numbers[i][j+1] || numbers[i][j] == numbers[i+1][j] || numbers[i][j] == 0) {
+                return 0;
+            }
+        }
+        if(numbers[i][3] == numbers[i+1][3] || numbers[i][3] == 0) // this is the last coloumn check.
+            return 0;
+    }
+    for(int j=0; j<3; j++) { //this is the last row check.
+        if(numbers[3][j] == numbers[3][j+1] || numbers[3][j] == 0)
+            return 0;
+    }
+    return 1;
+
+
+
 
 }
 
@@ -360,6 +388,7 @@ int main(int argc, char **argv) {
     int currentNumbersMatrix[4][4];
     initBoard(currentNumbersMatrix);
     int moveDirection=0;//2 down, 8 up, 4 left, 6 right.
+    int isGameOver = 0;
 
     SDL_Event e;
     int isMoved=0;
@@ -376,39 +405,54 @@ int main(int argc, char **argv) {
                 quit=true;
                 break;
             case SDLK_UP:
-                moveDirection = 8;
-                isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                if(!isGameOver) {
+                    moveDirection = 8;
+                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                }
                 break;
             case SDLK_DOWN:
-                moveDirection = 2;
-                isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                if(!isGameOver) {
+                    moveDirection = 2;
+                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                }
                 break;
 
             case SDLK_LEFT:
-                moveDirection = 4;
-                isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                if(!isGameOver) {
+                    moveDirection = 4;
+                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                }
                 break;
 
             case SDLK_RIGHT:
-                moveDirection = 6;
-                isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                if(!isGameOver) {
+                    moveDirection = 6;
+                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                }
                 break;
 
             default:
                 break;
-
-
             }
         }
 
-        //move is done, so add a number to a empty cell
+        //if move is done, add a number to a empty cell
         if(isMoved == 1) {
-            if(insertNumber(currentNumbersMatrix)) {
+            if(!insertNumber(currentNumbersMatrix)) {
                 endGame(currentNumbersMatrix);
+                isGameOver=1;
+
             }
+            isMoved=0;
+        } else {
+
+            if(checkGameOver(currentNumbersMatrix)) {
+                isGameOver = 1;
+            }
+
         }
-        isMoved=0;
-        renderGame(renderer, background, numbers, currentNumbersMatrix);
+
+        renderGame(renderer, background, numbers, currentNumbersMatrix, isGameOver);
     }
 
 
