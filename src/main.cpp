@@ -29,6 +29,16 @@ typedef struct {
     SDL_Texture* numberTiles;
 } RenderSystem;
 
+
+typedef struct {
+    int startX;
+    int startY;
+    int endX;
+    int endY;
+    int totalMove = 0;
+} tileMoveData;
+
+
 typedef struct {
     int currentNumbersMatrix[4][4];
     int oldNumbersMatrix[4][4]; // = {0};
@@ -36,6 +46,7 @@ typedef struct {
     int isGameOver = 0;
     int score = 0;
     int isMoved = 0;
+    tileMoveData tileMoves[4][4];
 
 } BoardStatus;
 
