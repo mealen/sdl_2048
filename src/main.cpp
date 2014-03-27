@@ -105,11 +105,11 @@ int moveZerosInSingleArray(int numbers[], int numberCount) {
 * returns 1 if there were a change, returns 0 if no change
 *
 */
-int moveSingleArray2(int numbers[], int numberCount, int* score) {
+int mergeSingleArray(int numbers[], int numberCount, int* score) {
     int internalReturn = 0;
     if(numberCount == 1)
         return 0;
-    internalReturn = moveSingleArray2(numbers +1, numberCount -1, score); //this ensures after current, it is ordered(all zero possible)
+    internalReturn = mergeSingleArray(numbers +1, numberCount -1, score); //this ensures after current, it is ordered(all zero possible)
     if(numbers[0] == 0)
         return internalReturn;
     if (numbers[0]==numbers[1]) {
@@ -126,10 +126,10 @@ int moveSingleArray2(int numbers[], int numberCount, int* score) {
 * moves the zeros to the end, then merge part is called.
 * moves zeros after that again.
 */
-int moveSingleArray3(int numbers[], int numberCount,int* score) {
+int moveSingleArray(int numbers[], int numberCount,int* score) {
     int returnValue = 0;
     returnValue = moveZerosInSingleArray(numbers, numberCount);
-    returnValue += moveSingleArray2(numbers,numberCount, score);
+    returnValue += mergeSingleArray(numbers,numberCount, score);
     returnValue += moveZerosInSingleArray(numbers, numberCount);
     return (returnValue > 0);
 }
@@ -147,7 +147,7 @@ int moveNumbers(int numbers[4][4], int direction, int* score) {
         for(int i=0; i<4; i++) {
             int coloumn[4] = {numbers[i][0],numbers[i][1],numbers[i][2],numbers[i][3]};
 
-            if(moveSingleArray3(coloumn,4, score) == 1)
+            if(moveSingleArray(coloumn,4, score) == 1)
                 returnValue = 1;
 
 
@@ -162,7 +162,7 @@ int moveNumbers(int numbers[4][4], int direction, int* score) {
         for(int i=0; i<4; i++) {
             //new
             int coloumn[4] = {numbers[3][i],numbers[2][i],numbers[1][i],numbers[0][i]};
-            if(moveSingleArray3(coloumn,4, score) == 1)
+            if(moveSingleArray(coloumn,4, score) == 1)
                 returnValue = 1;
             numbers[3][i] = coloumn[0];
             numbers[2][i] = coloumn[1];
@@ -175,7 +175,7 @@ int moveNumbers(int numbers[4][4], int direction, int* score) {
         for(int i=0; i<4; i++) {
             //new
             int coloumn[4] = {numbers[0][i],numbers[1][i],numbers[2][i],numbers[3][i]};
-            if(moveSingleArray3(coloumn,4, score) == 1)
+            if(moveSingleArray(coloumn,4, score) == 1)
                 returnValue = 1;
             numbers[0][i] = coloumn[0];
             numbers[1][i] = coloumn[1];
@@ -188,7 +188,7 @@ int moveNumbers(int numbers[4][4], int direction, int* score) {
         for(int i=0; i<4; i++) {
             //new
             int coloumn[4] = {numbers[i][3],numbers[i][2],numbers[i][1],numbers[i][0]};
-            if(moveSingleArray3(coloumn,4, score) == 1)
+            if(moveSingleArray(coloumn,4, score) == 1)
                 returnValue = 1;
             numbers[i][3] = coloumn[0];
             numbers[i][2] = coloumn[1];
