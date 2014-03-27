@@ -40,8 +40,8 @@ typedef struct {
 
 
 typedef struct {
-    int currentNumbersMatrix[4][4];
-    int oldNumbersMatrix[4][4]; // = {0};
+    int numbers[4][4];
+    int oldNumbers[4][4]; // = {0};
     int moveDirection = 0;//2 down, 8 up, 4 left, 6 right.
     int isGameOver = 0;
     int score = 0;
@@ -165,69 +165,62 @@ int moveSingleArray(int numbers[], int numberCount,int* score) {
 //cleaned of zeros.
 
 
-int moveNumbers(int numbers[4][4], int direction, int* score) {
+int moveNumbers(BoardStatus &bs) {
     int returnValue=0;
     logMessage("before");
-    logMatrixState(numbers);
-    switch(direction) {
+    logMatrixState(bs.numbers);
+    switch(bs.moveDirection) {
     case 2:
         logMessage("moving down ");
-
         for(int i=0; i<4; i++) {
-            int coloumn[4] = {numbers[i][0],numbers[i][1],numbers[i][2],numbers[i][3]};
-
-            if(moveSingleArray(coloumn,4, score) == 1)
+            int coloumn[4] = {bs.numbers[i][0],bs.numbers[i][1],bs.numbers[i][2],bs.numbers[i][3]};
+            if(moveSingleArray(coloumn,4, &(bs.score)) == 1)
                 returnValue = 1;
-
-
-            numbers[i][0] = coloumn[0];
-            numbers[i][1] = coloumn[1];
-            numbers[i][2] = coloumn[2];
-            numbers[i][3] = coloumn[3];
+            bs.numbers[i][0] = coloumn[0];
+            bs.numbers[i][1] = coloumn[1];
+            bs.numbers[i][2] = coloumn[2];
+            bs.numbers[i][3] = coloumn[3];
         }
         break;
     case 4:
         logMessage("moving left ");
         for(int i=0; i<4; i++) {
-            //new
-            int coloumn[4] = {numbers[3][i],numbers[2][i],numbers[1][i],numbers[0][i]};
-            if(moveSingleArray(coloumn,4, score) == 1)
+            int coloumn[4] = {bs.numbers[3][i],bs.numbers[2][i],bs.numbers[1][i],bs.numbers[0][i]};
+            if(moveSingleArray(coloumn,4, &(bs.score)) == 1)
                 returnValue = 1;
-            numbers[3][i] = coloumn[0];
-            numbers[2][i] = coloumn[1];
-            numbers[1][i] = coloumn[2];
-            numbers[0][i] = coloumn[3];
+            bs.numbers[3][i] = coloumn[0];
+            bs.numbers[2][i] = coloumn[1];
+            bs.numbers[1][i] = coloumn[2];
+            bs.numbers[0][i] = coloumn[3];
         }
         break;
     case 6:
         logMessage("moving right ");
         for(int i=0; i<4; i++) {
-            //new
-            int coloumn[4] = {numbers[0][i],numbers[1][i],numbers[2][i],numbers[3][i]};
-            if(moveSingleArray(coloumn,4, score) == 1)
+            int coloumn[4] = {bs.numbers[0][i],bs.numbers[1][i],bs.numbers[2][i],bs.numbers[3][i]};
+            if(moveSingleArray(coloumn,4, &(bs.score)) == 1)
                 returnValue = 1;
-            numbers[0][i] = coloumn[0];
-            numbers[1][i] = coloumn[1];
-            numbers[2][i] = coloumn[2];
-            numbers[3][i] = coloumn[3];
+            bs.numbers[0][i] = coloumn[0];
+            bs.numbers[1][i] = coloumn[1];
+            bs.numbers[2][i] = coloumn[2];
+            bs.numbers[3][i] = coloumn[3];
         }
         break;
     case 8:
         logMessage("moving up ");
         for(int i=0; i<4; i++) {
-            //new
-            int coloumn[4] = {numbers[i][3],numbers[i][2],numbers[i][1],numbers[i][0]};
-            if(moveSingleArray(coloumn,4, score) == 1)
+            int coloumn[4] = {bs.numbers[i][3],bs.numbers[i][2],bs.numbers[i][1],bs.numbers[i][0]};
+            if(moveSingleArray(coloumn,4, &(bs.score)) == 1)
                 returnValue = 1;
-            numbers[i][3] = coloumn[0];
-            numbers[i][2] = coloumn[1];
-            numbers[i][1] = coloumn[2];
-            numbers[i][0] = coloumn[3];
+            bs.numbers[i][3] = coloumn[0];
+            bs.numbers[i][2] = coloumn[1];
+            bs.numbers[i][1] = coloumn[2];
+            bs.numbers[i][0] = coloumn[3];
         }
         break;
     }
     logMessage("after");
-    logMatrixState(numbers);
+    logMatrixState(bs.numbers);
     return returnValue;
 }
 
@@ -387,7 +380,7 @@ int backupNumbersMatrix(int original[4][4], int backup[4][4]) {
 int main(int argc, char **argv) {
     RenderSystem currentRS;
     BoardStatus board;
-    initBoard(board.currentNumbersMatrix);
+    initBoard(board.numbers);
 
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
@@ -429,7 +422,7 @@ int main(int argc, char **argv) {
 
     SDL_Event e;
     //initial render
-    renderGame(currentRS, board.currentNumbersMatrix, board.isGameOver, board.score);
+    renderGame(currentRS, board.numbers, board.isGameOver, board.score);
     while (!quit) {
 //        while(SDL_PollEvent(&e)) {
             SDL_WaitEvent(&e);{
@@ -446,31 +439,31 @@ int main(int argc, char **argv) {
                 case SDLK_UP:
                     if(!board.isGameOver) {
                         board.moveDirection = 8;
-                        backupNumbersMatrix(board.currentNumbersMatrix,board.oldNumbersMatrix);
-                        board.isMoved = moveNumbers(board.currentNumbersMatrix,board.moveDirection, &(board.score));
+                        backupNumbersMatrix(board.numbers,board.oldNumbers);
+                        board.isMoved = moveNumbers(board);
                     }
                     break;
                 case SDLK_DOWN:
                     if(!board.isGameOver) {
                         board.moveDirection = 2;
-                        backupNumbersMatrix(board.currentNumbersMatrix,board.oldNumbersMatrix);
-                        board.isMoved = moveNumbers(board.currentNumbersMatrix,board.moveDirection, &(board.score));
+                        backupNumbersMatrix(board.numbers,board.oldNumbers);
+                        board.isMoved = moveNumbers(board);
                     }
                     break;
 
                 case SDLK_LEFT:
                     if(!board.isGameOver) {
                         board.moveDirection = 4;
-                        backupNumbersMatrix(board.currentNumbersMatrix,board.oldNumbersMatrix);
-                        board.isMoved = moveNumbers(board.currentNumbersMatrix,board.moveDirection, &(board.score));
+                        backupNumbersMatrix(board.numbers,board.oldNumbers);
+                        board.isMoved = moveNumbers(board);
                     }
                     break;
 
                 case SDLK_RIGHT:
                     if(!board.isGameOver) {
                         board.moveDirection = 6;
-                        backupNumbersMatrix(board.currentNumbersMatrix,board.oldNumbersMatrix);
-                        board.isMoved = moveNumbers(board.currentNumbersMatrix,board.moveDirection, &(board.score));
+                        backupNumbersMatrix(board.numbers,board.oldNumbers);
+                        board.isMoved = moveNumbers(board);
                     }
                     break;
 
@@ -482,20 +475,21 @@ int main(int argc, char **argv) {
 
         //if move is done, add a number to a empty cell
         if(board.isMoved == 1) {
-            if(!insertNumber(board.currentNumbersMatrix)) {
-                endGame(board.currentNumbersMatrix);
+            if(!insertNumber(board.numbers)) {
+                endGame(board.numbers);
                 board.isGameOver=1;
             }
             //don't move this over insert number.
-            renderGame(currentRS, board.currentNumbersMatrix, board.isGameOver, board.score);
+
             board.isMoved=0;
         } else {
 
-            if(checkGameOver(board.currentNumbersMatrix)) {
+            if(checkGameOver(board.numbers)) {
                 board.isGameOver = 1;
             }
 
         }
+        renderGame(currentRS, board.numbers, board.isGameOver, board.score);
 
     }
 
