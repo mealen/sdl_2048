@@ -337,6 +337,17 @@ int checkGameOver(int numbers[4][4]) {
 
 }
 
+/**
+* This function overwrites old matrix.
+*
+*/
+int backupNumbersMatrix(int original[4][4], int backup[4][4]) {
+    for(int i=0; i<4; i++) {
+        for(int j=0; j<4; j++) {
+            backup[i][j] = original[i][j];
+        }
+    }
+}
 
 int main(int argc, char **argv) {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -382,6 +393,7 @@ int main(int argc, char **argv) {
 
 
     int currentNumbersMatrix[4][4];
+    int oldNumbersMatrix[4][4] = {0};
     initBoard(currentNumbersMatrix);
     int moveDirection=0;//2 down, 8 up, 4 left, 6 right.
     int isGameOver = 0;
@@ -389,47 +401,56 @@ int main(int argc, char **argv) {
 
     SDL_Event e;
     int isMoved=0;
+
+    //initial render
+    renderGame(renderer, background, numbers, currentNumbersMatrix, isGameOver, score);
     while (!quit) {
-        SDL_WaitEvent(&e);
-        if(e.type == SDL_QUIT)
-            quit=true;
-        if(e.type == SDL_KEYDOWN) {
-            switch (e.key.keysym.sym) {
-            case SDLK_ESCAPE:
-                quit = true;
-                break;
-            case SDLK_q:
+        while(SDL_PollEvent(&e)) {
+            ;
+            if(e.type == SDL_QUIT)
                 quit=true;
-                break;
-            case SDLK_UP:
-                if(!isGameOver) {
-                    moveDirection = 8;
-                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
-                }
-                break;
-            case SDLK_DOWN:
-                if(!isGameOver) {
-                    moveDirection = 2;
-                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
-                }
-                break;
+            if(e.type == SDL_KEYDOWN) {
+                switch (e.key.keysym.sym) {
+                case SDLK_ESCAPE:
+                    quit = true;
+                    break;
+                case SDLK_q:
+                    quit=true;
+                    break;
+                case SDLK_UP:
+                    if(!isGameOver) {
+                        moveDirection = 8;
+                        backupNumbersMatrix(currentNumbersMatrix,oldNumbersMatrix);
+                        isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
+                    }
+                    break;
+                case SDLK_DOWN:
+                    if(!isGameOver) {
+                        moveDirection = 2;
+                        backupNumbersMatrix(currentNumbersMatrix,oldNumbersMatrix);
+                        isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
+                    }
+                    break;
 
-            case SDLK_LEFT:
-                if(!isGameOver) {
-                    moveDirection = 4;
-                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
-                }
-                break;
+                case SDLK_LEFT:
+                    if(!isGameOver) {
+                        moveDirection = 4;
+                        backupNumbersMatrix(currentNumbersMatrix,oldNumbersMatrix);
+                        isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
+                    }
+                    break;
 
-            case SDLK_RIGHT:
-                if(!isGameOver) {
-                    moveDirection = 6;
-                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
-                }
-                break;
+                case SDLK_RIGHT:
+                    if(!isGameOver) {
+                        moveDirection = 6;
+                        backupNumbersMatrix(currentNumbersMatrix,oldNumbersMatrix);
+                        isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
+                    }
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
+                }
             }
         }
 
@@ -438,8 +459,9 @@ int main(int argc, char **argv) {
             if(!insertNumber(currentNumbersMatrix)) {
                 endGame(currentNumbersMatrix);
                 isGameOver=1;
-
             }
+            //don't move this over insert number.
+            renderGame(renderer, background, numbers, currentNumbersMatrix, isGameOver, score);
             isMoved=0;
         } else {
 
@@ -449,9 +471,9 @@ int main(int argc, char **argv) {
 
         }
 
-        std::cout << "score " << score << std::endl;
+        //std::cout << "score " << score << std::endl;
 
-        renderGame(renderer, background, numbers, currentNumbersMatrix, isGameOver, score);
+
     }
 
 
