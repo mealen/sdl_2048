@@ -21,10 +21,8 @@ const int TILE_BASE_MARGIN = 10;
 
 bool quit = false;
 
-void logMessage(const std::string &msg)
-{
-    if(DEBUG == 1)
-    {
+void logMessage(const std::string &msg) {
+    if(DEBUG == 1) {
         std::cout << msg << std::endl;
     }
 }
@@ -32,17 +30,13 @@ void logMessage(const std::string &msg)
 /**
 * Log an sdl error.
 */
-void logSDLError(std::ostream &os, const std::string &msg)
-{
+void logSDLError(std::ostream &os, const std::string &msg) {
     os << msg << " error: " << SDL_GetError() << std::endl;
 }
 
-void logMatrixState(int numbers[4][4])
-{
-    for (int i=0; i<4; i++)
-    {
-        for (int j=0; j<4; j++)
-        {
+void logMatrixState(int numbers[4][4]) {
+    for (int i=0; i<4; i++) {
+        for (int j=0; j<4; j++) {
             std::cout << numbers[i][j] << " ";
         }
         std::cout << std::endl;
@@ -50,27 +44,23 @@ void logMatrixState(int numbers[4][4])
 }
 
 SDL_Texture* renderText(const std::string &message, const std::string &fontFile,
-                        SDL_Color color, int fontSize, SDL_Renderer *renderer)
-{
+                        SDL_Color color, int fontSize, SDL_Renderer *renderer) {
     //Open the font
     TTF_Font *font = TTF_OpenFont(fontFile.c_str(), fontSize);
-    if (font == nullptr)
-    {
+    if (font == nullptr) {
         logSDLError(std::cout, "TTF_OpenFont");
         return nullptr;
     }
     //We need to first render to a surface as that's what TTF_RenderText
     //returns, then load that surface into a texture
     SDL_Surface *surf = TTF_RenderText_Blended(font, message.c_str(), color);
-    if (surf == nullptr)
-    {
+    if (surf == nullptr) {
         TTF_CloseFont(font);
         logSDLError(std::cout, "TTF_RenderText");
         return nullptr;
     }
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surf);
-    if (texture == nullptr)
-    {
+    if (texture == nullptr) {
         logSDLError(std::cout, "CreateTexture");
     }
     //Clean up the surface and font
@@ -81,41 +71,53 @@ SDL_Texture* renderText(const std::string &message, const std::string &fontFile,
 
 
 
-SDL_Texture* loadTexture(const std::string &file, SDL_Renderer *ren)
-{
+SDL_Texture* loadTexture(const std::string &file, SDL_Renderer *ren) {
     SDL_Texture *texture = nullptr;
 
 //     SDL_Surface *loadedImage = SDL_LoadBMP(file.c_str());
     texture = IMG_LoadTexture(ren,file.c_str());
 
-    if (texture== nullptr)
-    {
+    if (texture== nullptr) {
         logSDLError(std::cout, "IMG_LoadTexture");
     }
     return texture;
 }
 
+int moveZerosInSingleArray(int numbers[], int numberCount) {
+    int returnValue = 0;
+    for(int i =numberCount -1; i>0; i--) {
+        if(numbers[i] == 0) {
+            for(int j=i-1; j >= 0; j--) {
+                if(numbers[j] != 0) {
+                    numbers[i] = numbers[j];
+                    numbers[j] =0;
+                    returnValue = 1;
+                    break;
+                }
+            }
+        }
+    }
+    return returnValue;
+}
+
+
 /**
 * returns 1 if there were a change, returns 0 if no change
 *
 */
-int moveSingleArray2(int numbers[], int numberCount)
-{
+int moveSingleArray2(int numbers[], int numberCount) {
     int internalReturn = 0;
     if(numberCount == 1)
         return 0;
     internalReturn = moveSingleArray2(numbers +1, numberCount -1); //this ensures after current, it is ordered(all zero possible)
     if(numbers[0] == 0)
         return internalReturn;
-    if(numbers[1] == 0)
-    {
-        numbers[1] = numbers[0];
-        numbers[0] = 0;
-        moveSingleArray2(numbers + 1, numberCount -1); //order after current, in case all zeros. what if we already done a merge?
-        return 1;
-    }
-    else if (numbers[0]==numbers[1])
-    {
+    if(numbers[1] == 0) {
+        //numbers[1] = numbers[0];
+        //numbers[0] = 0;
+        //moveSingleArray2(numbers + 1, numberCount -1); //order after current, in case all zeros. what if we already done a merge?
+        //return 1;
+    } else if (numbers[0]==numbers[1]) {
         numbers[1] = numbers[1] * 2;
         numbers[0] = 0;
         return 1;
@@ -123,21 +125,35 @@ int moveSingleArray2(int numbers[], int numberCount)
     return internalReturn;
 }
 
-int moveNumbers(int numbers[4][4], int direction)
-{
+
+/**
+* moves the zeros to the end, then merge part is called.
+* moves zeros after that again.
+*/
+int moveSingleArray3(int numbers[], int numberCount) {
+    int returnValue = 0;
+    returnValue = moveZerosInSingleArray(numbers, numberCount);
+    returnValue += moveSingleArray2(numbers,numberCount);
+    returnValue += moveZerosInSingleArray(numbers, numberCount);
+    logMessage("return value");
+    std::cout << returnValue << std::endl;
+    return (returnValue > 0);
+}
+//cleaned of zeros.
+
+
+int moveNumbers(int numbers[4][4], int direction) {
     int returnValue=0;
     logMessage("before");
     logMatrixState(numbers);
-    switch(direction)
-    {
+    switch(direction) {
     case 2:
         logMessage("moving down ");
 
-        for(int i=0; i<4; i++)
-        {
+        for(int i=0; i<4; i++) {
             int coloumn[4] = {numbers[i][0],numbers[i][1],numbers[i][2],numbers[i][3]};
 
-            if(moveSingleArray2(coloumn,4) == 1)
+            if(moveSingleArray3(coloumn,4) == 1)
                 returnValue = 1;
 
 
@@ -149,11 +165,10 @@ int moveNumbers(int numbers[4][4], int direction)
         break;
     case 4:
         logMessage("moving left ");
-        for(int i=0; i<4; i++)
-        {
+        for(int i=0; i<4; i++) {
             //new
             int coloumn[4] = {numbers[3][i],numbers[2][i],numbers[1][i],numbers[0][i]};
-            if(moveSingleArray2(coloumn,4) == 1)
+            if(moveSingleArray3(coloumn,4) == 1)
                 returnValue = 1;
             numbers[3][i] = coloumn[0];
             numbers[2][i] = coloumn[1];
@@ -163,11 +178,10 @@ int moveNumbers(int numbers[4][4], int direction)
         break;
     case 6:
         logMessage("moving right ");
-        for(int i=0; i<4; i++)
-        {
+        for(int i=0; i<4; i++) {
             //new
             int coloumn[4] = {numbers[0][i],numbers[1][i],numbers[2][i],numbers[3][i]};
-            if(moveSingleArray2(coloumn,4) == 1)
+            if(moveSingleArray3(coloumn,4) == 1)
                 returnValue = 1;
             numbers[0][i] = coloumn[0];
             numbers[1][i] = coloumn[1];
@@ -177,11 +191,10 @@ int moveNumbers(int numbers[4][4], int direction)
         break;
     case 8:
         logMessage("moving up ");
-        for(int i=0; i<4; i++)
-        {
+        for(int i=0; i<4; i++) {
             //new
             int coloumn[4] = {numbers[i][3],numbers[i][2],numbers[i][1],numbers[i][0]};
-            if(moveSingleArray2(coloumn,4) == 1)
+            if(moveSingleArray3(coloumn,4) == 1)
                 returnValue = 1;
             numbers[i][3] = coloumn[0];
             numbers[i][2] = coloumn[1];
@@ -198,33 +211,27 @@ int moveNumbers(int numbers[4][4], int direction)
 /**
 * draw the texture to a SDL_Renderer, with given scale.
 */
-void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst, SDL_Rect *clip=nullptr)
-{
+void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst, SDL_Rect *clip=nullptr) {
     SDL_RenderCopy(ren, tex, clip, &dst);
 }
 
 /**
 * draw the texture to a SDL_Renderer withot scaling.
 */
-void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y, SDL_Rect *clip=nullptr)
-{
+void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y, SDL_Rect *clip=nullptr) {
     SDL_Rect dst;
     dst.x = x;
     dst.y = y;
-    if (clip!=nullptr)
-    {
+    if (clip!=nullptr) {
         dst.w = clip->w;
         dst.h = clip->h;
-    }
-    else
-    {
+    } else {
         SDL_QueryTexture(tex, NULL, NULL, &dst.w, &dst.h);
     }
     renderTexture(tex, ren, dst, clip);
 }
 
-int insertNumber(int numbers[4][4])
-{
+int insertNumber(int numbers[4][4]) {
     logMessage("insert call");
     int newNumber;
     if(rand() % 5 == 4) // %20 chance
@@ -233,10 +240,8 @@ int insertNumber(int numbers[4][4])
         newNumber = 2;
 
     int emptyCellCount = 0;
-    for(int i=0; i<4; i++)
-    {
-        for(int j=0; j<4; j++)
-        {
+    for(int i=0; i<4; i++) {
+        for(int j=0; j<4; j++) {
             if(numbers[i][j] == 0)
                 emptyCellCount++;
         }
@@ -247,17 +252,13 @@ int insertNumber(int numbers[4][4])
     int insertCell = rand() % emptyCellCount;
 
     emptyCellCount = 0; //now find the element and set
-    for(int i=0; i<4; i++)
-    {
-        for(int j=0; j<4; j++)
-        {
+    for(int i=0; i<4; i++) {
+        for(int j=0; j<4; j++) {
             if(numbers[i][j] == 0)
-                if(emptyCellCount == insertCell)
-                {
+                if(emptyCellCount == insertCell) {
                     numbers[i][j]= newNumber;
                     return 0;
-                }
-                else
+                } else
                     emptyCellCount++;
         }
     }
@@ -266,38 +267,32 @@ int insertNumber(int numbers[4][4])
 }
 
 
-int main(int argc, char **argv)
-{
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-    {
+int main(int argc, char **argv) {
+    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
         return 1;
     }
 
     SDL_Window *win = SDL_CreateWindow("Lesson 2", 100, 100,
                                        SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    if(win == nullptr)
-    {
+    if(win == nullptr) {
         logSDLError(std::cout, "SDL_CreateWindow");
         return 1;
     }
 
     SDL_Renderer *renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    if (renderer == nullptr)
-    {
+    if (renderer == nullptr) {
         logSDLError(std::cout, "SDL_CreateRenderer");
         return 1;
     }
 
     //this is for performance.
-    if ((IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG) != IMG_INIT_PNG)
-    {
+    if ((IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG) != IMG_INIT_PNG) {
         logSDLError(std::cout, "IMG_Init");
         return 1;
     }
 
-    if (TTF_Init() != 0)
-    {
+    if (TTF_Init() != 0) {
         logSDLError(std::cout, "TTF_Init");
         return 1;
     }
@@ -308,8 +303,7 @@ int main(int argc, char **argv)
     SDL_Color color = {50,50,50};
     //SDL_Texture* text = renderText("Hello World", "./res/sample.ttf",color, 16, renderer);
 
-    if(background == nullptr || numbers == nullptr)
-    {
+    if(background == nullptr || numbers == nullptr) {
         logSDLError(std::cout, "LoadTexture");
         return 4;
     }
@@ -318,8 +312,7 @@ int main(int argc, char **argv)
 
 
     SDL_Rect clips[12];
-    for(int i=0; i<12; ++i)
-    {
+    for(int i=0; i<12; ++i) {
         clips[i].x= i * TILE_WIDTH;
         clips[i].y= 0;
         clips[i].w = TILE_WIDTH;
@@ -332,15 +325,12 @@ int main(int argc, char **argv)
 
     SDL_Event e;
     int isMoved=0;
-    while (!quit)
-    {
+    while (!quit) {
         SDL_WaitEvent(&e);
         if(e.type == SDL_QUIT)
             quit=true;
-        if(e.type == SDL_KEYDOWN)
-        {
-            switch (e.key.keysym.sym)
-            {
+        if(e.type == SDL_KEYDOWN) {
+            switch (e.key.keysym.sym) {
             case SDLK_ESCAPE:
                 quit = true;
                 break;
@@ -374,8 +364,7 @@ int main(int argc, char **argv)
         }
 
         //move is done, so add a number to a empty cell
-        if(isMoved == 1)
-        {
+        if(isMoved == 1) {
             insertNumber(currentNumbersMatrix);
         }
         isMoved=0;
@@ -390,12 +379,9 @@ int main(int argc, char **argv)
         //renderTexture(numbers, renderer,dst,&clips[0]);
 
 
-        for(int i=0; i < 4; i++)
-        {
-            for(int j=0; j < 4; j++)
-            {
-                if(currentNumbersMatrix[i][j] > 0)
-                {
+        for(int i=0; i < 4; i++) {
+            for(int j=0; j < 4; j++) {
+                if(currentNumbersMatrix[i][j] > 0) {
                     int xpos=TILE_BASE_X + TILE_BASE_MARGIN + i * (TILE_BASE_MARGIN + TILE_WIDTH);
                     int ypos=TILE_BASE_Y + TILE_BASE_MARGIN + j * (TILE_BASE_MARGIN + TILE_HEIGHT);
                     //std::cout << "xpos = " << xpos << std::endl;
