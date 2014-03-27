@@ -28,6 +28,16 @@ typedef struct {
     SDL_Texture* numberTiles;
 } RenderSystem;
 
+typedef struct {
+    int currentNumbersMatrix[4][4];
+    int oldNumbersMatrix[4][4]; // = {0};
+    int moveDirection = 0;//2 down, 8 up, 4 left, 6 right.
+    int isGameOver = 0;
+    int score = 0;
+    int isMoved = 0;
+
+} BoardStatus;
+
 void logMessage(const std::string &msg) {
     if(DEBUG == 1) {
         std::cout << msg << std::endl;
@@ -255,7 +265,7 @@ int insertNumber(int numbers[4][4]) {
     emptyCellCount = 0; //now find the element and set
     for(int i=0; i<4; i++) {
         for(int j=0; j<4; j++) {
-            if(numbers[i][j] == 0){
+            if(numbers[i][j] == 0) {
                 if(emptyCellCount == insertCell) {
                     numbers[i][j]= newNumber;
                     return 1;
@@ -361,6 +371,8 @@ int backupNumbersMatrix(int original[4][4], int backup[4][4]) {
 
 int main(int argc, char **argv) {
     RenderSystem currentRS;
+    BoardStatus board;
+    initBoard(board.currentNumbersMatrix);
 
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
@@ -391,31 +403,18 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    currentRS.background = loadTexture("./res/background.png",renderer);
-    currentRS.numbers = loadTexture("./res/numbers.png",renderer);
+    currentRS.background = loadTexture("./res/background.png",currentRS.renderer);
+    currentRS.numberTiles = loadTexture("./res/numbers.png",currentRS.renderer);
 
 
-    if(currentRS.background == nullptr || currentRS.numbers == nullptr) {
+    if(currentRS.background == nullptr || currentRS.numberTiles == nullptr) {
         logSDLError(std::cout, "LoadTexture");
         return 4;
     }
 
-    //set up the clip points
-
-
-
-    int currentNumbersMatrix[4][4];
-    int oldNumbersMatrix[4][4] = {0};
-    initBoard(currentNumbersMatrix);
-    int moveDirection=0;//2 down, 8 up, 4 left, 6 right.
-    int isGameOver = 0;
-    int score = 0;
-
     SDL_Event e;
-    int isMoved=0;
-
     //initial render
-    renderGame(currentRS, currentNumbersMatrix, isGameOver, score);
+    renderGame(currentRS, board.currentNumbersMatrix, board.isGameOver, board.score);
     while (!quit) {
         while(SDL_PollEvent(&e)) {
             ;
@@ -430,33 +429,33 @@ int main(int argc, char **argv) {
                     quit=true;
                     break;
                 case SDLK_UP:
-                    if(!isGameOver) {
-                        moveDirection = 8;
-                        backupNumbersMatrix(currentNumbersMatrix,oldNumbersMatrix);
-                        isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
+                    if(!board.isGameOver) {
+                        board.moveDirection = 8;
+                        backupNumbersMatrix(board.currentNumbersMatrix,board.oldNumbersMatrix);
+                        board.isMoved = moveNumbers(board.currentNumbersMatrix,board.moveDirection, &(board.score));
                     }
                     break;
                 case SDLK_DOWN:
-                    if(!isGameOver) {
-                        moveDirection = 2;
-                        backupNumbersMatrix(currentNumbersMatrix,oldNumbersMatrix);
-                        isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
+                    if(!board.isGameOver) {
+                        board.moveDirection = 2;
+                        backupNumbersMatrix(board.currentNumbersMatrix,board.oldNumbersMatrix);
+                        board.isMoved = moveNumbers(board.currentNumbersMatrix,board.moveDirection, &(board.score));
                     }
                     break;
 
                 case SDLK_LEFT:
-                    if(!isGameOver) {
-                        moveDirection = 4;
-                        backupNumbersMatrix(currentNumbersMatrix,oldNumbersMatrix);
-                        isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
+                    if(!board.isGameOver) {
+                        board.moveDirection = 4;
+                        backupNumbersMatrix(board.currentNumbersMatrix,board.oldNumbersMatrix);
+                        board.isMoved = moveNumbers(board.currentNumbersMatrix,board.moveDirection, &(board.score));
                     }
                     break;
 
                 case SDLK_RIGHT:
-                    if(!isGameOver) {
-                        moveDirection = 6;
-                        backupNumbersMatrix(currentNumbersMatrix,oldNumbersMatrix);
-                        isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
+                    if(!board.isGameOver) {
+                        board.moveDirection = 6;
+                        backupNumbersMatrix(board.currentNumbersMatrix,board.oldNumbersMatrix);
+                        board.isMoved = moveNumbers(board.currentNumbersMatrix,board.moveDirection, &(board.score));
                     }
                     break;
 
@@ -467,18 +466,18 @@ int main(int argc, char **argv) {
         }
 
         //if move is done, add a number to a empty cell
-        if(isMoved == 1) {
-            if(!insertNumber(currentNumbersMatrix)) {
-                endGame(currentNumbersMatrix);
-                isGameOver=1;
+        if(board.isMoved == 1) {
+            if(!insertNumber(board.currentNumbersMatrix)) {
+                endGame(board.currentNumbersMatrix);
+                board.isGameOver=1;
             }
             //don't move this over insert number.
-            renderGame(currentRS, currentNumbersMatrix, isGameOver, score);
-            isMoved=0;
+            renderGame(currentRS, board.currentNumbersMatrix, board.isGameOver, board.score);
+            board.isMoved=0;
         } else {
 
-            if(checkGameOver(currentNumbersMatrix)) {
-                isGameOver = 1;
+            if(checkGameOver(board.currentNumbersMatrix)) {
+                board.isGameOver = 1;
             }
 
         }
@@ -488,9 +487,9 @@ int main(int argc, char **argv) {
 
     }
 
-    SDL_DestroyTexture(currentNumbersMatrix.numberTiles);
-    SDL_DestroyTexture(currentNumbersMatrix.background);
-    SDL_DestroyRenderer(currentNumbersMatrix.renderer);
+    SDL_DestroyTexture(currentRS.numberTiles);
+    SDL_DestroyTexture(currentRS.background);
+    SDL_DestroyRenderer(currentRS.renderer);
     SDL_DestroyWindow(win);
     SDL_Quit();
 
