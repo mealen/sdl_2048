@@ -247,7 +247,7 @@ int insertNumber(int numbers[4][4]) {
         }
     }
     if (emptyCellCount == 0)
-        return 1;
+        return 0;
 
     int insertCell = rand() % emptyCellCount;
 
@@ -257,12 +257,55 @@ int insertNumber(int numbers[4][4]) {
             if(numbers[i][j] == 0)
                 if(emptyCellCount == insertCell) {
                     numbers[i][j]= newNumber;
-                    return 0;
+                    return 1;
                 } else
                     emptyCellCount++;
         }
     }
+}
 
+void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* numberTiles,  int numbers[4][4]) {
+    //TODO these calculations are redudant
+    SDL_Rect clips[12];
+    for(int i=0; i<12; ++i) {
+        clips[i].x= i * TILE_WIDTH;
+        clips[i].y= 0;
+        clips[i].w = TILE_WIDTH;
+        clips[i].h = TILE_HEIGHT;
+    }
+
+    SDL_Color color = {50,50,50};
+
+    SDL_RenderClear(renderer);
+    renderTexture(background,renderer,0,0, NULL);
+
+    for(int i=0; i < 4; i++) {
+        for(int j=0; j < 4; j++) {
+            if(numbers[i][j] > 0) {
+                int xpos=TILE_BASE_X + TILE_BASE_MARGIN + i * (TILE_BASE_MARGIN + TILE_WIDTH);
+                int ypos=TILE_BASE_Y + TILE_BASE_MARGIN + j * (TILE_BASE_MARGIN + TILE_HEIGHT);
+                //std::cout << "xpos = " << xpos << std::endl;
+                //std::cout << "ypos = " << ypos << std::endl;
+                SDL_Texture* numberText = renderText(std::to_string(numbers[i][j]),"./res/Gauge-Regular.ttf",color,72, renderer);
+                int clipValue = log2(numbers[i][j]) -1 ;//since 2 is the first one but it is 2^^1 not 0.
+                renderTexture(numberTiles,renderer,xpos,ypos, &clips[clipValue]);
+                renderTexture(numberText,renderer,xpos + 20 ,ypos + 20, NULL);//the font is smaller than the tile
+                //std::cout << "printed using" << useClip%4 << std::endl;
+//                    SDL_Delay(1000);
+//                    SDL_RenderPresent(renderer);
+            }
+        }
+    }
+
+    //renderTexture(text,renderer,0,0);
+    SDL_RenderPresent(renderer);
+}
+
+void initBoard(int numbers[4][4]) {
+
+}
+
+void endGame(int numbers[4][4]) {
 
 }
 
@@ -300,8 +343,6 @@ int main(int argc, char **argv) {
     SDL_Texture* background = loadTexture("./res/background.png",renderer);
     SDL_Texture* numbers = loadTexture("./res/numbers.png",renderer);
 
-    SDL_Color color = {50,50,50};
-    //SDL_Texture* text = renderText("Hello World", "./res/sample.ttf",color, 16, renderer);
 
     if(background == nullptr || numbers == nullptr) {
         logSDLError(std::cout, "LoadTexture");
@@ -311,13 +352,7 @@ int main(int argc, char **argv) {
     //set up the clip points
 
 
-    SDL_Rect clips[12];
-    for(int i=0; i<12; ++i) {
-        clips[i].x= i * TILE_WIDTH;
-        clips[i].y= 0;
-        clips[i].w = TILE_WIDTH;
-        clips[i].h = TILE_HEIGHT;
-    }
+
     int currentNumbersMatrix[4][4] = {0};
     currentNumbersMatrix[0][0] = 2;
     currentNumbersMatrix[0][3] = 2;
@@ -365,40 +400,12 @@ int main(int argc, char **argv) {
 
         //move is done, so add a number to a empty cell
         if(isMoved == 1) {
-            insertNumber(currentNumbersMatrix);
-        }
-        isMoved=0;
-        SDL_RenderClear(renderer);
-        renderTexture(background,renderer,0,0, NULL);
-
-        SDL_Rect dst;
-        dst.x=25;
-        dst.y=25;
-        dst.w=TILE_WIDTH;
-        dst.h=TILE_HEIGHT;
-        //renderTexture(numbers, renderer,dst,&clips[0]);
-
-
-        for(int i=0; i < 4; i++) {
-            for(int j=0; j < 4; j++) {
-                if(currentNumbersMatrix[i][j] > 0) {
-                    int xpos=TILE_BASE_X + TILE_BASE_MARGIN + i * (TILE_BASE_MARGIN + TILE_WIDTH);
-                    int ypos=TILE_BASE_Y + TILE_BASE_MARGIN + j * (TILE_BASE_MARGIN + TILE_HEIGHT);
-                    //std::cout << "xpos = " << xpos << std::endl;
-                    //std::cout << "ypos = " << ypos << std::endl;
-                    SDL_Texture* numberText = renderText(std::to_string(currentNumbersMatrix[i][j]),"./res/Gauge-Regular.ttf",color,72, renderer);
-                    int clipValue = log2(currentNumbersMatrix[i][j]) -1 ;//since 2 is the first one but it is 2^^1 not 0.
-                    renderTexture(numbers,renderer,xpos,ypos, &clips[clipValue]);
-                    renderTexture(numberText,renderer,xpos + 20 ,ypos + 20, NULL);//the font is smaller than the tile
-                    //std::cout << "printed using" << useClip%4 << std::endl;
-//                    SDL_Delay(1000);
-//                    SDL_RenderPresent(renderer);
-                }
+            if(insertNumber(currentNumbersMatrix)) {
+                endGame(currentNumbersMatrix);
             }
         }
-
-        //renderTexture(text,renderer,0,0);
-        SDL_RenderPresent(renderer);
+        isMoved=0;
+        renderGame(renderer, background, numbers, currentNumbersMatrix);
     }
 
 
