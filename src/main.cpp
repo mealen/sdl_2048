@@ -35,6 +35,7 @@ typedef struct {
     int startY;
     int endX;
     int endY;
+    int endPos; //the end position on moving row
     int totalMove = 0;
 } tileMoveData;
 
@@ -67,6 +68,17 @@ void logMatrixState(int numbers[4][4]) {
     for (int i=0; i<4; i++) {
         for (int j=0; j<4; j++) {
             std::cout << numbers[j][i] << " "; //FIXME how this is reverse?
+        }
+        std::cout << std::endl;
+    }
+}
+
+
+
+void logMoveData(tileMoveData moveData[4][4]) {
+    for (int i=0; i<4; i++) {
+        for (int j=0; j<4; j++) {
+            std::cout << moveData[j][i].endPos << " "; //FIXME how this is reverse?
         }
         std::cout << std::endl;
     }
@@ -112,7 +124,14 @@ SDL_Texture* loadTexture(const std::string &file, SDL_Renderer *ren) {
     return texture;
 }
 
-int moveZerosInSingleArray(int numbers[], int numberCount) {
+void fillTmdEndPosValues(int numbers[], tileMoveData tmd[], int numberCount) {
+    for (int i=0; i < numberCount; i++) {
+        tmd[i].endPos = i;
+    }
+}
+
+
+int moveZerosInSingleArray(int numbers[], int numberCount, tileMoveData tmd[]) {
     int returnValue = 0;
     for(int i =numberCount -1; i>0; i--) {
         if(numbers[i] == 0) {
@@ -121,6 +140,13 @@ int moveZerosInSingleArray(int numbers[], int numberCount) {
                     numbers[i] = numbers[j];
                     numbers[j] =0;
                     returnValue = 1;
+                    //since the endpos values are filled, it must match at some point
+                    for(int k=0; k <= j; k++) {
+                        if(tmd[k].endPos == j) {
+                            //it was moved from k position
+                            tmd[k].endPos = i; // update the last position data
+                        }
+                    }
                     break;
                 }
             }
@@ -134,17 +160,19 @@ int moveZerosInSingleArray(int numbers[], int numberCount) {
 * returns 1 if there were a change, returns 0 if no change
 *
 */
-int mergeSingleArray(int numbers[], int numberCount, int* score) {
+int mergeSingleArray(int numbers[], int numberCount, int* score, tileMoveData tmd[]) {
     int internalReturn = 0;
     if(numberCount == 1)
         return 0;
-    internalReturn = mergeSingleArray(numbers +1, numberCount -1, score); //this ensures after current, it is ordered(all zero possible)
+    internalReturn = mergeSingleArray(numbers +1, numberCount -1, score, tmd + 1); //this ensures after current, it is ordered(all zero possible)
     if(numbers[0] == 0)
         return internalReturn;
     if (numbers[0]==numbers[1]) {
         numbers[1] = numbers[1] * 2;
         numbers[0] = 0;
         *score = *score + numbers[1];
+        tmd[0].endPos++; // the element move one tile
+
         return 1;
     }
     return internalReturn;
@@ -155,11 +183,12 @@ int mergeSingleArray(int numbers[], int numberCount, int* score) {
 * moves the zeros to the end, then merge part is called.
 * moves zeros after that again.
 */
-int moveSingleArray(int numbers[], int numberCount,int* score) {
+int moveSingleArray(int numbers[], int numberCount,int* score, tileMoveData tmd[]) {
     int returnValue = 0;
-    returnValue = moveZerosInSingleArray(numbers, numberCount);
-    returnValue += mergeSingleArray(numbers,numberCount, score);
-    returnValue += moveZerosInSingleArray(numbers, numberCount);
+    fillTmdEndPosValues(numbers,tmd, numberCount);
+    returnValue = moveZerosInSingleArray(numbers, numberCount,tmd);
+    returnValue += mergeSingleArray(numbers,numberCount, score,tmd);
+    returnValue += moveZerosInSingleArray(numbers, numberCount,tmd);
     return (returnValue > 0);
 }
 //cleaned of zeros.
@@ -174,53 +203,90 @@ int moveNumbers(BoardStatus &bs) {
         logMessage("moving down ");
         for(int i=0; i<4; i++) {
             int coloumn[4] = {bs.numbers[i][0],bs.numbers[i][1],bs.numbers[i][2],bs.numbers[i][3]};
-            if(moveSingleArray(coloumn,4, &(bs.score)) == 1)
+            tileMoveData tmd[4] = {bs.tileMoves[i][0],bs.tileMoves[i][1],bs.tileMoves[i][2],bs.tileMoves[i][3]};
+            if(moveSingleArray(coloumn,4, &(bs.score),tmd) == 1)
                 returnValue = 1;
             bs.numbers[i][0] = coloumn[0];
             bs.numbers[i][1] = coloumn[1];
             bs.numbers[i][2] = coloumn[2];
             bs.numbers[i][3] = coloumn[3];
+            //reinsert move data
+            //TODO these should be enriched
+            bs.tileMoves[i][0] = tmd[0];
+            bs.tileMoves[i][1] = tmd[1];
+            bs.tileMoves[i][2] = tmd[2];
+            bs.tileMoves[i][3] = tmd[3];
+
+
+
         }
         break;
     case 4:
         logMessage("moving left ");
         for(int i=0; i<4; i++) {
             int coloumn[4] = {bs.numbers[3][i],bs.numbers[2][i],bs.numbers[1][i],bs.numbers[0][i]};
-            if(moveSingleArray(coloumn,4, &(bs.score)) == 1)
+            tileMoveData tmd[4] = {bs.tileMoves[3][i],bs.tileMoves[2][i],bs.tileMoves[1][i],bs.tileMoves[0][i]};
+            if(moveSingleArray(coloumn,4, &(bs.score),tmd) == 1)
                 returnValue = 1;
             bs.numbers[3][i] = coloumn[0];
             bs.numbers[2][i] = coloumn[1];
             bs.numbers[1][i] = coloumn[2];
             bs.numbers[0][i] = coloumn[3];
+
+            //reinsert move data
+            //TODO these should be enriched
+            bs.tileMoves[3][i] = tmd[0];
+            bs.tileMoves[2][i] = tmd[1];
+            bs.tileMoves[1][i] = tmd[2];
+            bs.tileMoves[0][i] = tmd[3];
         }
         break;
     case 6:
         logMessage("moving right ");
         for(int i=0; i<4; i++) {
             int coloumn[4] = {bs.numbers[0][i],bs.numbers[1][i],bs.numbers[2][i],bs.numbers[3][i]};
-            if(moveSingleArray(coloumn,4, &(bs.score)) == 1)
+            tileMoveData tmd[4] = {bs.tileMoves[0][i],bs.tileMoves[1][i],bs.tileMoves[2][i],bs.tileMoves[3][i]};
+            if(moveSingleArray(coloumn,4, &(bs.score),tmd) == 1)
                 returnValue = 1;
             bs.numbers[0][i] = coloumn[0];
             bs.numbers[1][i] = coloumn[1];
             bs.numbers[2][i] = coloumn[2];
             bs.numbers[3][i] = coloumn[3];
+
+            //reinsert move data
+            //TODO these should be enriched
+            bs.tileMoves[0][i] = tmd[0];
+            bs.tileMoves[1][i] = tmd[1];
+            bs.tileMoves[2][i] = tmd[2];
+            bs.tileMoves[3][i] = tmd[3];
+
         }
         break;
     case 8:
         logMessage("moving up ");
         for(int i=0; i<4; i++) {
             int coloumn[4] = {bs.numbers[i][3],bs.numbers[i][2],bs.numbers[i][1],bs.numbers[i][0]};
-            if(moveSingleArray(coloumn,4, &(bs.score)) == 1)
+            tileMoveData tmd[4] = {bs.tileMoves[i][3],bs.tileMoves[i][2],bs.tileMoves[i][1],bs.tileMoves[i][0]};
+            if(moveSingleArray(coloumn,4, &(bs.score),tmd) == 1)
                 returnValue = 1;
             bs.numbers[i][3] = coloumn[0];
             bs.numbers[i][2] = coloumn[1];
             bs.numbers[i][1] = coloumn[2];
             bs.numbers[i][0] = coloumn[3];
+
+            //reinsert move data
+            //TODO these should be enriched
+            bs.tileMoves[i][3] = tmd[0];
+            bs.tileMoves[i][2] = tmd[1];
+            bs.tileMoves[i][1] = tmd[2];
+            bs.tileMoves[i][0] = tmd[3];
         }
         break;
     }
     logMessage("after");
     logMatrixState(bs.numbers);
+    logMessage("change");
+    logMoveData(bs.tileMoves);
     return returnValue;
 }
 
@@ -425,7 +491,8 @@ int main(int argc, char **argv) {
     renderGame(currentRS, board.numbers, board.isGameOver, board.score);
     while (!quit) {
 //        while(SDL_PollEvent(&e)) {
-            SDL_WaitEvent(&e);{
+        SDL_WaitEvent(&e);
+        {
             if(e.type == SDL_QUIT)
                 quit=true;
             if(e.type == SDL_KEYDOWN) {
