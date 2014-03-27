@@ -105,21 +105,17 @@ int moveZerosInSingleArray(int numbers[], int numberCount) {
 * returns 1 if there were a change, returns 0 if no change
 *
 */
-int moveSingleArray2(int numbers[], int numberCount) {
+int moveSingleArray2(int numbers[], int numberCount, int* score) {
     int internalReturn = 0;
     if(numberCount == 1)
         return 0;
-    internalReturn = moveSingleArray2(numbers +1, numberCount -1); //this ensures after current, it is ordered(all zero possible)
+    internalReturn = moveSingleArray2(numbers +1, numberCount -1, score); //this ensures after current, it is ordered(all zero possible)
     if(numbers[0] == 0)
         return internalReturn;
-    if(numbers[1] == 0) {
-        //numbers[1] = numbers[0];
-        //numbers[0] = 0;
-        //moveSingleArray2(numbers + 1, numberCount -1); //order after current, in case all zeros. what if we already done a merge?
-        //return 1;
-    } else if (numbers[0]==numbers[1]) {
+    if (numbers[0]==numbers[1]) {
         numbers[1] = numbers[1] * 2;
         numbers[0] = 0;
+        *score = *score + numbers[1];
         return 1;
     }
     return internalReturn;
@@ -130,19 +126,17 @@ int moveSingleArray2(int numbers[], int numberCount) {
 * moves the zeros to the end, then merge part is called.
 * moves zeros after that again.
 */
-int moveSingleArray3(int numbers[], int numberCount) {
+int moveSingleArray3(int numbers[], int numberCount,int* score) {
     int returnValue = 0;
     returnValue = moveZerosInSingleArray(numbers, numberCount);
-    returnValue += moveSingleArray2(numbers,numberCount);
+    returnValue += moveSingleArray2(numbers,numberCount, score);
     returnValue += moveZerosInSingleArray(numbers, numberCount);
-    logMessage("return value");
-    std::cout << returnValue << std::endl;
     return (returnValue > 0);
 }
 //cleaned of zeros.
 
 
-int moveNumbers(int numbers[4][4], int direction) {
+int moveNumbers(int numbers[4][4], int direction, int* score) {
     int returnValue=0;
     logMessage("before");
     logMatrixState(numbers);
@@ -153,7 +147,7 @@ int moveNumbers(int numbers[4][4], int direction) {
         for(int i=0; i<4; i++) {
             int coloumn[4] = {numbers[i][0],numbers[i][1],numbers[i][2],numbers[i][3]};
 
-            if(moveSingleArray3(coloumn,4) == 1)
+            if(moveSingleArray3(coloumn,4, score) == 1)
                 returnValue = 1;
 
 
@@ -168,7 +162,7 @@ int moveNumbers(int numbers[4][4], int direction) {
         for(int i=0; i<4; i++) {
             //new
             int coloumn[4] = {numbers[3][i],numbers[2][i],numbers[1][i],numbers[0][i]};
-            if(moveSingleArray3(coloumn,4) == 1)
+            if(moveSingleArray3(coloumn,4, score) == 1)
                 returnValue = 1;
             numbers[3][i] = coloumn[0];
             numbers[2][i] = coloumn[1];
@@ -181,7 +175,7 @@ int moveNumbers(int numbers[4][4], int direction) {
         for(int i=0; i<4; i++) {
             //new
             int coloumn[4] = {numbers[0][i],numbers[1][i],numbers[2][i],numbers[3][i]};
-            if(moveSingleArray3(coloumn,4) == 1)
+            if(moveSingleArray3(coloumn,4, score) == 1)
                 returnValue = 1;
             numbers[0][i] = coloumn[0];
             numbers[1][i] = coloumn[1];
@@ -194,7 +188,7 @@ int moveNumbers(int numbers[4][4], int direction) {
         for(int i=0; i<4; i++) {
             //new
             int coloumn[4] = {numbers[i][3],numbers[i][2],numbers[i][1],numbers[i][0]};
-            if(moveSingleArray3(coloumn,4) == 1)
+            if(moveSingleArray3(coloumn,4, score) == 1)
                 returnValue = 1;
             numbers[i][3] = coloumn[0];
             numbers[i][2] = coloumn[1];
@@ -264,7 +258,7 @@ int insertNumber(int numbers[4][4]) {
     }
 }
 
-void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* numberTiles,  int numbers[4][4],int isGameOver) {
+void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* numberTiles,  int numbers[4][4],int isGameOver, int score) {
     //TODO these calculations are redudant
     SDL_Rect clips[12];
     for(int i=0; i<12; ++i) {
@@ -292,6 +286,9 @@ void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* nu
             }
         }
     }
+    //render score
+    SDL_Texture* scoreText = renderText(std::to_string(score),"./res/Gauge-Regular.ttf",color,48, renderer);
+    renderTexture(scoreText,renderer, 500 ,170, NULL);//the font is smaller than the tile
 
     if(isGameOver == 1) {
         color = {150,50,50};
@@ -389,6 +386,7 @@ int main(int argc, char **argv) {
     initBoard(currentNumbersMatrix);
     int moveDirection=0;//2 down, 8 up, 4 left, 6 right.
     int isGameOver = 0;
+    int score = 0;
 
     SDL_Event e;
     int isMoved=0;
@@ -407,27 +405,27 @@ int main(int argc, char **argv) {
             case SDLK_UP:
                 if(!isGameOver) {
                     moveDirection = 8;
-                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
                 }
                 break;
             case SDLK_DOWN:
                 if(!isGameOver) {
                     moveDirection = 2;
-                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
                 }
                 break;
 
             case SDLK_LEFT:
                 if(!isGameOver) {
                     moveDirection = 4;
-                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
                 }
                 break;
 
             case SDLK_RIGHT:
                 if(!isGameOver) {
                     moveDirection = 6;
-                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection);
+                    isMoved = moveNumbers(currentNumbersMatrix,moveDirection, &score);
                 }
                 break;
 
@@ -452,7 +450,9 @@ int main(int argc, char **argv) {
 
         }
 
-        renderGame(renderer, background, numbers, currentNumbersMatrix, isGameOver);
+        std::cout << "score " << score << std::endl;
+
+        renderGame(renderer, background, numbers, currentNumbersMatrix, isGameOver, score);
     }
 
 
