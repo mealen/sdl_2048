@@ -66,7 +66,7 @@ void logSDLError(std::ostream &os, const std::string &msg) {
 void logMatrixState(int numbers[4][4]) {
     for (int i=0; i<4; i++) {
         for (int j=0; j<4; j++) {
-            std::cout << numbers[i][j] << " ";
+            std::cout << numbers[j][i] << " "; //FIXME how this is reverse?
         }
         std::cout << std::endl;
     }
