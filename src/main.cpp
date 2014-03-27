@@ -387,7 +387,8 @@ int main(int argc, char **argv) {
                     //std::cout << "xpos = " << xpos << std::endl;
                     //std::cout << "ypos = " << ypos << std::endl;
                     SDL_Texture* numberText = renderText(std::to_string(currentNumbersMatrix[i][j]),"./res/Gauge-Regular.ttf",color,72, renderer);
-                    renderTexture(numbers,renderer,xpos,ypos, &clips[0]);
+                    int clipValue = log2(currentNumbersMatrix[i][j]) -1 ;//since 2 is the first one but it is 2^^1 not 0.
+                    renderTexture(numbers,renderer,xpos,ypos, &clips[clipValue]);
                     renderTexture(numberText,renderer,xpos + 20 ,ypos + 20, NULL);//the font is smaller than the tile
                     //std::cout << "printed using" << useClip%4 << std::endl;
 //                    SDL_Delay(1000);
