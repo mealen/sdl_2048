@@ -278,11 +278,10 @@ void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* nu
             if(numbers[i][j] > 0) {
                 int xpos=TILE_BASE_X + TILE_BASE_MARGIN + i * (TILE_BASE_MARGIN + TILE_WIDTH);
                 int ypos=TILE_BASE_Y + TILE_BASE_MARGIN + j * (TILE_BASE_MARGIN + TILE_HEIGHT);
-                SDL_Texture* numberText = renderText(std::to_string(numbers[i][j]),"./res/Gauge-Regular.ttf",color,72, renderer);
                 int clipValue = log2(numbers[i][j]) -1 ;//since 2 is the first one but it is 2^^1 not 0.
                 renderTexture(numberTiles,renderer,xpos,ypos, &clips[clipValue]);
-                renderTexture(numberText,renderer,xpos + 20 ,ypos + 20, NULL);//the font is smaller than the tile
-
+                //SDL_Texture* numberText = renderText(std::to_string(numbers[i][j]),"./res/Gauge-Regular.ttf",color,72, renderer);
+                //renderTexture(numberText,renderer,xpos + 20 ,ypos + 20, NULL);//the font is smaller than the tile
             }
         }
     }
