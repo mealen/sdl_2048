@@ -302,7 +302,11 @@ void renderGame(SDL_Renderer* renderer, SDL_Texture* background, SDL_Texture* nu
 }
 
 void initBoard(int numbers[4][4]) {
+    srand (time(NULL));
+    memset(numbers, 0, 16 * sizeof(int));
+    numbers[rand() % 4][rand() % 4] = 2;
 
+    numbers[rand() % 4][rand() % 4] += 2;
 }
 
 void endGame(int numbers[4][4]) {
@@ -353,9 +357,8 @@ int main(int argc, char **argv) {
 
 
 
-    int currentNumbersMatrix[4][4] = {0};
-    currentNumbersMatrix[0][0] = 2;
-    currentNumbersMatrix[0][3] = 2;
+    int currentNumbersMatrix[4][4];
+    initBoard(currentNumbersMatrix);
     int moveDirection=0;//2 down, 8 up, 4 left, 6 right.
 
     SDL_Event e;
