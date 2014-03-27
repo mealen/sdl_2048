@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cassert>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_image.h>
@@ -275,6 +276,9 @@ int insertNumber(int numbers[4][4]) {
             }
         }
     }
+    //this should newer happen, but gcc complains
+    assert(0);
+    return 0;
 }
 
 void renderGame(RenderSystem renderSystem,  int numbers[4][4],int isGameOver, int score) {
@@ -416,8 +420,8 @@ int main(int argc, char **argv) {
     //initial render
     renderGame(currentRS, board.currentNumbersMatrix, board.isGameOver, board.score);
     while (!quit) {
-        while(SDL_PollEvent(&e)) {
-            ;
+//        while(SDL_PollEvent(&e)) {
+            SDL_WaitEvent(&e);{
             if(e.type == SDL_QUIT)
                 quit=true;
             if(e.type == SDL_KEYDOWN) {
@@ -481,9 +485,6 @@ int main(int argc, char **argv) {
             }
 
         }
-
-        //std::cout << "score " << score << std::endl;
-
 
     }
 
