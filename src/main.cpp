@@ -363,7 +363,8 @@ int insertNumber(TileData numbers[4][4]) {
 			if (numbers[i][j].newValue == 0) {
 				if (emptyCellCount == insertCell) {
 					numbers[i][j].newValue = newNumber;
-					numbers[i][j].startValue = -1; //for new entry
+					numbers[i][j].startValue = -1 * numbers[i][j].startValue - 1; //for new entry it is negated, and +1 is incase of 0
+					logMoveData(numbers);
 					return 1;
 				} else {
 					emptyCellCount++;
@@ -385,25 +386,25 @@ int renderTiles(RenderSystem rs, TileData tiles[4][4], int frame,
 
 	//TODO these calculations are redudant
 	SDL_Rect clips[12];
-	for (int i = 0; i < 12; ++i) {
-		clips[i].x = i * TILE_WIDTH;
-		clips[i].y = 0;
-		clips[i].w = TILE_WIDTH;
-		clips[i].h = TILE_HEIGHT;
+	for (int clipIndex = 0; clipIndex < 12; ++clipIndex) {
+		clips[clipIndex].x = clipIndex * TILE_WIDTH;
+		clips[clipIndex].y = 0;
+		clips[clipIndex].w = TILE_WIDTH;
+		clips[clipIndex].h = TILE_HEIGHT;
 	}
 	SDL_RenderClear(rs.renderer);
 	renderTexture(rs.background, rs.renderer, 0, 0, NULL);
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
-			if (tiles[i][j].startValue > 0) {
+			//std::cout << "[" << i << "," << j << "]";
+			if (tiles[i][j].startValue > 0 || tiles[i][j].startValue < -1) { // if <= -1 then the inserted gets rendered at begining
 				int isInPlace = 0;
 				int movement = frame * frameSpeed;
 
 				int xpos = TILE_BASE_X + TILE_BASE_MARGIN
 						+ j * (TILE_BASE_MARGIN + TILE_WIDTH);
-				if (movement
-						>= ((TILE_BASE_MARGIN + TILE_WIDTH)
-								* abs(tiles[i][j].moveX))) {
+				if (movement >=
+						((TILE_BASE_MARGIN + TILE_WIDTH)* abs(tiles[i][j].moveX))) {
 					//the tile is in final position on x;
 					xpos += (TILE_BASE_MARGIN + TILE_WIDTH) * tiles[i][j].moveX;
 					isInPlace = 1;
@@ -440,21 +441,24 @@ int renderTiles(RenderSystem rs, TileData tiles[4][4], int frame,
 				if (isInPlace) {
 					i2 = i + tiles[i][j].moveY;
 					j2 = j + tiles[i][j].moveX;
-					//std::cout << "i2:" << i2 << " j2:" << j2 << " new Value:"
+					//std::cout << "i:" << i << " j:" << j << " inplace" << std::endl;
 					//		<< tiles[i2][j2].newValue << std::endl;
-					if (tiles[i2][j2].newValue == 0) {
+					if (tiles[i2][j2].newValue == 0 ) {
 						clipValue = 0;
 					} else {
 						clipValue = log2(tiles[i2][j2].newValue) - 1; //since 2 is the first one but it is 2^^1 not 0.
 					}
 					//std::cout << "clip value " << clipValue << std::endl;
 				} else {
-					clipValue = log2(tiles[i][j].startValue) - 1;
+					std::cout << "startvalue " << tiles[i][j].startValue << " newValue " << tiles[i][j].newValue << std::endl;
+					int tileStartValue = abs(tiles[i][j].startValue) - abs(tiles[i][j].startValue) % 2; //this calculates if an insert is done to that point.
+					clipValue = log2(tileStartValue) - 1;
 				}
 
 				renderTexture(rs.numberTiles, rs.renderer, xpos, ypos,
 						&clips[clipValue]);
-			} else if (tiles[i][j].newValue > 0 && tiles[i][j].startValue == -1){
+			}
+			if (tiles[i][j].newValue > 0 && tiles[i][j].startValue <= -1	){
 				//std::cout << "new value at [" << i << "," << j << "]"<< std::endl;
 				insertedTileX = i;
 				insertedTileY = j;
@@ -486,7 +490,7 @@ void renderGame(RenderSystem renderSystem, TileData numbers[4][4],
 
 	int i = 0;
 	while (!renderTiles(renderSystem, numbers, i++, 10)) {
-		SDL_Delay(5);
+		SDL_Delay(1);
 	}
 	//render score
 	SDL_Texture* scoreText = renderText(std::to_string(score),
@@ -662,12 +666,15 @@ int main(int argc, char **argv) {
 
 		//if move is done, add a number to a empty cell
 		if (board.isMoved == 1) {
+			//render before insert, or inserted element overwrites the tile before animation.
+			//renderGame(currentRS, board.tiles, board.isGameOver, board.score);
 			if (!insertNumber(board.tiles)) {
 				endGame(board.tiles);
 				board.isGameOver = 1;
 			}
 			logMessage("after insert");
 			logMatrixState(board.tiles);
+
 			renderGame(currentRS, board.tiles, board.isGameOver, board.score);
 			board.isMoved = 0;
 		} else {
