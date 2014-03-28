@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <string>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_image.h>
@@ -37,17 +38,18 @@ typedef struct {
     int endY;
     int endPos; //the end position on moving row
     int totalMove = 0;
-} tileMoveData;
+    int value;
+} TileData;
 
 
 typedef struct {
-    int numbers[4][4];
-    int oldNumbers[4][4]; // = {0};
+    TileData numbers[4][4];
+    TileData oldNumbers[4][4]; // = {0};
     int moveDirection = 0;//2 down, 8 up, 4 left, 6 right.
     int isGameOver = 0;
     int score = 0;
     int isMoved = 0;
-    tileMoveData tileMoves[4][4];
+    TileData tileMoves[4][4];
 
 } BoardStatus;
 
@@ -64,10 +66,10 @@ void logSDLError(std::ostream &os, const std::string &msg) {
     os << msg << " error: " << SDL_GetError() << std::endl;
 }
 
-void logMatrixState(int numbers[4][4]) {
+void logMatrixState(TileData tiles[4][4]) {
     for (int i=0; i<4; i++) {
         for (int j=0; j<4; j++) {
-            std::cout << numbers[j][i] << " "; //FIXME how this is reverse?
+            std::cout << tiles[j][i].value << " "; //FIXME how this is reverse?
         }
         std::cout << std::endl;
     }
@@ -75,7 +77,7 @@ void logMatrixState(int numbers[4][4]) {
 
 
 
-void logMoveData(tileMoveData moveData[4][4]) {
+void logMoveData(TileData moveData[4][4]) {
     for (int i=0; i<4; i++) {
         for (int j=0; j<4; j++) {
             std::cout << moveData[j][i].endPos << " "; //FIXME how this is reverse?
@@ -124,14 +126,14 @@ SDL_Texture* loadTexture(const std::string &file, SDL_Renderer *ren) {
     return texture;
 }
 
-void fillTmdEndPosValues(int numbers[], tileMoveData tmd[], int numberCount) {
+void fillTmdEndPosValues(int numbers[], TileData tmd[], int numberCount) {
     for (int i=0; i < numberCount; i++) {
         tmd[i].endPos = i;
     }
 }
 
 
-int moveZerosInSingleArray(int numbers[], int numberCount, tileMoveData tmd[]) {
+int moveZerosInSingleArray(int numbers[], int numberCount, TileData tmd[]) {
     int returnValue = 0;
     for(int i =numberCount -1; i>0; i--) {
         if(numbers[i] == 0) {
@@ -160,7 +162,7 @@ int moveZerosInSingleArray(int numbers[], int numberCount, tileMoveData tmd[]) {
 * returns 1 if there were a change, returns 0 if no change
 *
 */
-int mergeSingleArray(int numbers[], int numberCount, int* score, tileMoveData tmd[]) {
+int mergeSingleArray(int numbers[], int numberCount, int* score, TileData tmd[]) {
     int internalReturn = 0;
     if(numberCount == 1)
         return 0;
@@ -183,7 +185,7 @@ int mergeSingleArray(int numbers[], int numberCount, int* score, tileMoveData tm
 * moves the zeros to the end, then merge part is called.
 * moves zeros after that again.
 */
-int moveSingleArray(int numbers[], int numberCount,int* score, tileMoveData tmd[]) {
+int moveSingleArray(int numbers[], int numberCount,int* score, TileData tmd[]) {
     int returnValue = 0;
     fillTmdEndPosValues(numbers,tmd, numberCount);
     returnValue = moveZerosInSingleArray(numbers, numberCount,tmd);
@@ -202,14 +204,17 @@ int moveNumbers(BoardStatus &bs) {
     case 2:
         logMessage("moving down ");
         for(int i=0; i<4; i++) {
-            int coloumn[4] = {bs.numbers[i][0],bs.numbers[i][1],bs.numbers[i][2],bs.numbers[i][3]};
-            tileMoveData tmd[4] = {bs.tileMoves[i][0],bs.tileMoves[i][1],bs.tileMoves[i][2],bs.tileMoves[i][3]};
+            int coloumn[4] = {bs.numbers[i][0].value,
+            		bs.numbers[i][1].value,
+            		bs.numbers[i][2].value,
+            		bs.numbers[i][3].value};
+            TileData tmd[4] = {bs.tileMoves[i][0],bs.tileMoves[i][1],bs.tileMoves[i][2],bs.tileMoves[i][3]};
             if(moveSingleArray(coloumn,4, &(bs.score),tmd) == 1)
                 returnValue = 1;
-            bs.numbers[i][0] = coloumn[0];
-            bs.numbers[i][1] = coloumn[1];
-            bs.numbers[i][2] = coloumn[2];
-            bs.numbers[i][3] = coloumn[3];
+            bs.numbers[i][0].value = coloumn[0];
+            bs.numbers[i][1].value = coloumn[1];
+            bs.numbers[i][2].value = coloumn[2];
+            bs.numbers[i][3].value = coloumn[3];
             //reinsert move data
             //TODO these should be enriched
             bs.tileMoves[i][0] = tmd[0];
@@ -224,14 +229,18 @@ int moveNumbers(BoardStatus &bs) {
     case 4:
         logMessage("moving left ");
         for(int i=0; i<4; i++) {
-            int coloumn[4] = {bs.numbers[3][i],bs.numbers[2][i],bs.numbers[1][i],bs.numbers[0][i]};
-            tileMoveData tmd[4] = {bs.tileMoves[3][i],bs.tileMoves[2][i],bs.tileMoves[1][i],bs.tileMoves[0][i]};
+            int coloumn[4] = {bs.numbers[3][i].value,
+            		bs.numbers[2][i].value,
+            		bs.numbers[1][i].value,
+            		bs.numbers[0][i].value
+            };
+            TileData tmd[4] = {bs.tileMoves[3][i],bs.tileMoves[2][i],bs.tileMoves[1][i],bs.tileMoves[0][i]};
             if(moveSingleArray(coloumn,4, &(bs.score),tmd) == 1)
                 returnValue = 1;
-            bs.numbers[3][i] = coloumn[0];
-            bs.numbers[2][i] = coloumn[1];
-            bs.numbers[1][i] = coloumn[2];
-            bs.numbers[0][i] = coloumn[3];
+            bs.numbers[3][i].value = coloumn[0];
+            bs.numbers[2][i].value = coloumn[1];
+            bs.numbers[1][i].value = coloumn[2];
+            bs.numbers[0][i].value = coloumn[3];
 
             //reinsert move data
             //TODO these should be enriched
@@ -244,14 +253,17 @@ int moveNumbers(BoardStatus &bs) {
     case 6:
         logMessage("moving right ");
         for(int i=0; i<4; i++) {
-            int coloumn[4] = {bs.numbers[0][i],bs.numbers[1][i],bs.numbers[2][i],bs.numbers[3][i]};
-            tileMoveData tmd[4] = {bs.tileMoves[0][i],bs.tileMoves[1][i],bs.tileMoves[2][i],bs.tileMoves[3][i]};
+            int coloumn[4] = {bs.numbers[0][i].value,
+            		bs.numbers[1][i].value,
+            		bs.numbers[2][i].value,
+            		bs.numbers[3][i].value};
+            TileData tmd[4] = {bs.tileMoves[0][i],bs.tileMoves[1][i],bs.tileMoves[2][i],bs.tileMoves[3][i]};
             if(moveSingleArray(coloumn,4, &(bs.score),tmd) == 1)
                 returnValue = 1;
-            bs.numbers[0][i] = coloumn[0];
-            bs.numbers[1][i] = coloumn[1];
-            bs.numbers[2][i] = coloumn[2];
-            bs.numbers[3][i] = coloumn[3];
+            bs.numbers[0][i].value = coloumn[0];
+            bs.numbers[1][i].value = coloumn[1];
+            bs.numbers[2][i].value = coloumn[2];
+            bs.numbers[3][i].value = coloumn[3];
 
             //reinsert move data
             //TODO these should be enriched
@@ -265,14 +277,17 @@ int moveNumbers(BoardStatus &bs) {
     case 8:
         logMessage("moving up ");
         for(int i=0; i<4; i++) {
-            int coloumn[4] = {bs.numbers[i][3],bs.numbers[i][2],bs.numbers[i][1],bs.numbers[i][0]};
-            tileMoveData tmd[4] = {bs.tileMoves[i][3],bs.tileMoves[i][2],bs.tileMoves[i][1],bs.tileMoves[i][0]};
+            int coloumn[4] = {bs.numbers[i][3].value,
+            		bs.numbers[i][2].value,
+            		bs.numbers[i][1].value,
+            		bs.numbers[i][0].value};
+            TileData tmd[4] = {bs.tileMoves[i][3],bs.tileMoves[i][2],bs.tileMoves[i][1],bs.tileMoves[i][0]};
             if(moveSingleArray(coloumn,4, &(bs.score),tmd) == 1)
                 returnValue = 1;
-            bs.numbers[i][3] = coloumn[0];
-            bs.numbers[i][2] = coloumn[1];
-            bs.numbers[i][1] = coloumn[2];
-            bs.numbers[i][0] = coloumn[3];
+            bs.numbers[i][3].value = coloumn[0];
+            bs.numbers[i][2].value = coloumn[1];
+            bs.numbers[i][1].value = coloumn[2];
+            bs.numbers[i][0].value = coloumn[3];
 
             //reinsert move data
             //TODO these should be enriched
@@ -313,7 +328,7 @@ void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y, SDL_Rect *
     renderTexture(tex, ren, dst, clip);
 }
 
-int insertNumber(int numbers[4][4]) {
+int insertNumber(TileData numbers[4][4]) {
     logMessage("insert call");
     int newNumber;
     if(rand() % 5 == 4) // %20 chance
@@ -324,7 +339,7 @@ int insertNumber(int numbers[4][4]) {
     int emptyCellCount = 0;
     for(int i=0; i<4; i++) {
         for(int j=0; j<4; j++) {
-            if(numbers[i][j] == 0)
+            if(numbers[i][j].value == 0)
                 emptyCellCount++;
         }
     }
@@ -336,9 +351,9 @@ int insertNumber(int numbers[4][4]) {
     emptyCellCount = 0; //now find the element and set
     for(int i=0; i<4; i++) {
         for(int j=0; j<4; j++) {
-            if(numbers[i][j] == 0) {
+            if(numbers[i][j].value == 0) {
                 if(emptyCellCount == insertCell) {
-                    numbers[i][j]= newNumber;
+                    numbers[i][j].value= newNumber;
                     return 1;
                 } else {
                     emptyCellCount++;
@@ -351,7 +366,7 @@ int insertNumber(int numbers[4][4]) {
     return 0;
 }
 
-void renderGame(RenderSystem renderSystem,  int numbers[4][4],int isGameOver, int score) {
+void renderGame(RenderSystem renderSystem,  TileData numbers[4][4],int isGameOver, int score) {
     //TODO these calculations are redudant
     SDL_Rect clips[12];
     for(int i=0; i<12; ++i) {
@@ -368,10 +383,10 @@ void renderGame(RenderSystem renderSystem,  int numbers[4][4],int isGameOver, in
 
     for(int i=0; i < 4; i++) {
         for(int j=0; j < 4; j++) {
-            if(numbers[i][j] > 0) {
+            if(numbers[i][j].value > 0) {
                 int xpos=TILE_BASE_X + TILE_BASE_MARGIN + i * (TILE_BASE_MARGIN + TILE_WIDTH);
                 int ypos=TILE_BASE_Y + TILE_BASE_MARGIN + j * (TILE_BASE_MARGIN + TILE_HEIGHT);
-                int clipValue = log2(numbers[i][j]) -1 ;//since 2 is the first one but it is 2^^1 not 0.
+                int clipValue = log2(numbers[i][j].value) -1 ;//since 2 is the first one but it is 2^^1 not 0.
                 renderTexture(renderSystem.numberTiles,renderSystem.renderer,xpos,ypos, &clips[clipValue]);
                 //SDL_Texture* numberText = renderText(std::to_string(numbers[i][j]),"./res/Gauge-Regular.ttf",color,72, renderer);
                 //renderTexture(numberText,renderer,xpos + 20 ,ypos + 20, NULL);//the font is smaller than the tile
@@ -391,36 +406,36 @@ void renderGame(RenderSystem renderSystem,  int numbers[4][4],int isGameOver, in
     SDL_RenderPresent(renderSystem.renderer);
 }
 
-void initBoard(int numbers[4][4]) {
+void initBoard(TileData tiles[4][4]) {
     srand (time(NULL));
-    memset(numbers, 0, 16 * sizeof(int));
-    numbers[rand() % 4][rand() % 4] = 2;
+    memset(tiles, 0, 16 * sizeof(TileData));
+    tiles[rand() % 4][rand() % 4].value = 2;
 
-    numbers[rand() % 4][rand() % 4] += 2;
+    tiles[rand() % 4][rand() % 4].value += 2;
 }
 
-void endGame(int numbers[4][4]) {
+void endGame(TileData numbers[4][4]) {
 
 }
 /**
 * it checks if the game is over.
 *
 */
-int checkGameOver(int numbers[4][4]) {
+int checkGameOver(TileData tiles[4][4]) {
     //TODO optimise this part
 
     //if there are 2 same adjent cell, it is not over. This for
     for(int i = 0; i< 3; i++) {
         for(int j = 0; j< 3; j++) {
-            if(numbers[i][j] == numbers[i][j+1] || numbers[i][j] == numbers[i+1][j] || numbers[i][j] == 0) {
+            if(tiles[i][j].value == tiles[i][j+1].value || tiles[i][j].value == tiles[i+1][j].value || tiles[i][j].value == 0) {
                 return 0;
             }
         }
-        if(numbers[i][3] == numbers[i+1][3] || numbers[i][3] == 0) // this is the last coloumn check.
+        if(tiles[i][3].value == tiles[i+1][3].value || tiles[i][3].value == 0) // this is the last coloumn check.
             return 0;
     }
     for(int j=0; j<3; j++) { //this is the last row check.
-        if(numbers[3][j] == numbers[3][j+1] || numbers[3][j] == 0)
+        if(tiles[3][j].value == tiles[3][j+1].value || tiles[3][j].value == 0)
             return 0;
     }
     return 1;
@@ -434,7 +449,7 @@ int checkGameOver(int numbers[4][4]) {
 * This function overwrites old matrix.
 *
 */
-int backupNumbersMatrix(int original[4][4], int backup[4][4]) {
+int backupNumbersMatrix(TileData original[4][4], TileData backup[4][4]) {
     for(int i=0; i<4; i++) {
         for(int j=0; j<4; j++) {
             backup[i][j] = original[i][j];
