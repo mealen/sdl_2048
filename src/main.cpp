@@ -6,7 +6,6 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
-
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 const int DEBUG = 1;
@@ -22,116 +21,115 @@ const int TILE_BASE_HEIGHT = 440;
 const int TILE_BASE_MARGIN = 10;
 const int ANIM_SPEED = 10;
 
-
-enum possibleMerges{noMerge, mergeOn,mergeOff};
+enum possibleMerges {
+	noMerge, mergeOn, mergeOff
+};
 
 typedef struct {
-    SDL_Renderer* renderer;
-    SDL_Texture* background;
-    SDL_Texture* numberTiles;
+	SDL_Renderer* renderer;
+	SDL_Texture* background;
+	SDL_Texture* numberTiles;
 } RenderSystem;
 
-
 typedef struct {
 
-    int startX;
-    int startY;
-    int moveX;
-    int moveY;
-    int totalMove = 0;
-    int startValue;
-    int newValue;
-    enum possibleMerges mergeStatus;
+	int startX;
+	int startY;
+	int moveX;
+	int moveY;
+	int totalMove = 0;
+	int startValue;
+	int newValue;
+	enum possibleMerges mergeStatus;
 } TileData;
 
-
 typedef struct {
-    TileData tiles[4][4];
-    TileData oldNumbers[4][4]; // = {0};
-    int moveDirection = 0;//2 down, 8 up, 4 left, 6 right.
-    int isGameOver = 0;
-    int score = 0;
-    int isMoved = 0;
-    bool quit = false;
+	TileData tiles[4][4];
+	TileData oldNumbers[4][4]; // = {0};
+	int moveDirection = 0; //2 down, 8 up, 4 left, 6 right.
+	int isGameOver = 0;
+	int score = 0;
+	int isMoved = 0;
+	bool quit = false;
 } BoardStatus;
 
 void logMessage(const std::string &msg) {
-    if(DEBUG == 1) {
-        std::cout << msg << std::endl;
-    }
+	if (DEBUG == 1) {
+		std::cout << msg << std::endl;
+	}
 }
 
 /**
-* Log an sdl error.
-*/
+ * Log an sdl error.
+ */
 void logSDLError(std::ostream &os, const std::string &msg) {
-    os << msg << " error: " << SDL_GetError() << std::endl;
+	os << msg << " error: " << SDL_GetError() << std::endl;
 }
 
 void logMatrixState(TileData tiles[4][4]) {
-    for (int i=0; i<4; i++) {
-        for (int j=0; j<4; j++) {
-            std::cout << tiles[j][i].newValue << " "; //FIXME how this is reverse?
-        }
-        std::cout << std::endl;
-    }
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			std::cout << tiles[i][j].newValue << " ";
+		}
+		std::cout << std::endl;
+	}
 }
 
-
-
 void logMoveData(TileData tileData[4][4]) {
-    for (int i=0; i<4; i++) {
-        for (int j=0; j<4; j++) {
-            std::cout << "[" << tileData[j][i].moveX << "," << tileData[j][i].moveY << "]"; //FIXME how this is reverse?
-        	std::cout << "[" << tileData[j][i].startX << "," << tileData[j][i].startY << "," << tileData[j][i].totalMove << "] ";
-        }
-        std::cout << std::endl;
-    }
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			std::cout << "[" << tileData[i][j].moveX << ","
+					<< tileData[i][j].moveY << "]";
+			std::cout << "[" << tileData[i][j].startValue << "] ";
+			//std::cout << "[" << tileData[j][i].startX << ","
+			//		<< tileData[j][i].startY << "," << tileData[j][i].totalMove
+			//		<< "] ";
+		}
+		std::cout << std::endl;
+	}
 }
 
 SDL_Texture* renderText(const std::string &message, const std::string &fontFile,
-                        SDL_Color color, int fontSize, SDL_Renderer *renderer) {
-    //Open the font
-    TTF_Font *font = TTF_OpenFont(fontFile.c_str(), fontSize);
-    if (font == nullptr) {
-        logSDLError(std::cout, "TTF_OpenFont");
-        return nullptr;
-    }
-    //We need to first render to a surface as that's what TTF_RenderText
-    //returns, then load that surface into a texture
-    SDL_Surface *surf = TTF_RenderText_Blended(font, message.c_str(), color);
-    if (surf == nullptr) {
-        TTF_CloseFont(font);
-        logSDLError(std::cout, "TTF_RenderText");
-        return nullptr;
-    }
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surf);
-    if (texture == nullptr) {
-        logSDLError(std::cout, "CreateTexture");
-    }
-    //Clean up the surface and font
-    SDL_FreeSurface(surf);
-    TTF_CloseFont(font);
-    return texture;
+		SDL_Color color, int fontSize, SDL_Renderer *renderer) {
+	//Open the font
+	TTF_Font *font = TTF_OpenFont(fontFile.c_str(), fontSize);
+	if (font == nullptr) {
+		logSDLError(std::cout, "TTF_OpenFont");
+		return nullptr;
+	}
+	//We need to first render to a surface as that's what TTF_RenderText
+	//returns, then load that surface into a texture
+	SDL_Surface *surf = TTF_RenderText_Blended(font, message.c_str(), color);
+	if (surf == nullptr) {
+		TTF_CloseFont(font);
+		logSDLError(std::cout, "TTF_RenderText");
+		return nullptr;
+	}
+	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surf);
+	if (texture == nullptr) {
+		logSDLError(std::cout, "CreateTexture");
+	}
+	//Clean up the surface and font
+	SDL_FreeSurface(surf);
+	TTF_CloseFont(font);
+	return texture;
 }
 
-
-
 SDL_Texture* loadTexture(const std::string &file, SDL_Renderer *ren) {
-    SDL_Texture *texture = nullptr;
+	SDL_Texture *texture = nullptr;
 
 //     SDL_Surface *loadedImage = SDL_LoadBMP(file.c_str());
-    texture = IMG_LoadTexture(ren,file.c_str());
+	texture = IMG_LoadTexture(ren, file.c_str());
 
-    if (texture== nullptr) {
-        logSDLError(std::cout, "IMG_LoadTexture");
-    }
-    return texture;
+	if (texture == nullptr) {
+		logSDLError(std::cout, "IMG_LoadTexture");
+	}
+	return texture;
 }
 
 void setTilesForMove(TileData tiles[4][4]) {
-    for (int i=0; i < 4; i++) {
-    	for (int j = 0; j < 4; ++j) {
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; ++j) {
 			tiles[i][j].startX = i;
 			tiles[i][j].startY = j;
 			tiles[i][j].startValue = tiles[i][j].newValue;
@@ -139,459 +137,554 @@ void setTilesForMove(TileData tiles[4][4]) {
 			tiles[i][j].moveX = 0;
 			tiles[i][j].moveY = 0;
 		}
-    }
+	}
 }
 
 void fillTileMove(TileData tiles[4][4], int moveDirection) {
 	logMessage("filling  move");
 	int baseX = 0;
 	int baseY = 0;
-    for (int i=0; i < 4; i++) {
-    	for (int j = 0; j < 4; ++j) {
-    		switch (moveDirection) {
-				case 2:
-					baseX = 1;	break;
-				case 4:
-					baseY = -1;	break;
-				case 6:
-					baseY = 1;	break;
-				case 8:
-					baseX = -1;	break;
-				default:
-					break;
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; ++j) {
+			switch (moveDirection) {
+			case 6:
+				baseX = 1;
+				break;
+			case 8:
+				baseY = -1;
+				break;
+			case 2:
+				baseY = 1;
+				break;
+			case 4:
+				baseX = -1;
+				break;
+			default:
+				break;
 			}
 
-    		tiles[tiles[i][j].startX][tiles[i][j].startY].moveX = tiles[i][j].totalMove * baseX;
-    		tiles[tiles[i][j].startX][tiles[i][j].startY].moveY = tiles[i][j].totalMove * baseY;
+			tiles[tiles[i][j].startX][tiles[i][j].startY].moveX =
+					tiles[i][j].totalMove * baseX;
+			tiles[tiles[i][j].startX][tiles[i][j].startY].moveY =
+					tiles[i][j].totalMove * baseY;
 			//tiles[i][j].moveX = i -tiles[i][j].startX;
-    		//tiles[i][j].moveY = j -tiles[i][j].startY;
+			//tiles[i][j].moveY = j -tiles[i][j].startY;
 
 		}
-    }
+	}
 }
-
 
 int moveZerosInSingleArray(TileData tiles[], int numberCount) {
-    int returnValue = 0;
-    for(int i =numberCount -1; i>0; i--) {
-        if(tiles[i].newValue == 0) {
-            for(int j=i-1; j >= 0; j--) {
-                if(tiles[j].newValue != 0) {
-                	TileData temp = tiles[i];
-                    tiles[i] = tiles[j];
-                    tiles[j] = temp;
-                    tiles[i].totalMove = i - j;
-                    returnValue = 1;
-                    break;
-                }
-            }
-        }
-    }
-    return returnValue;
+	int returnValue = 0;
+	for (int i = numberCount - 1; i > 0; i--) {
+		if (tiles[i].newValue == 0) {
+			for (int j = i - 1; j >= 0; j--) {
+				if (tiles[j].newValue != 0) {
+					TileData temp = tiles[i];
+					//the start values should not interchange
+
+					tiles[i] = tiles[j];
+					tiles[i].startValue = temp.startValue;
+					temp.startValue = tiles[j].startValue;
+					tiles[j] = temp;
+					tiles[i].totalMove += i - j;
+
+					returnValue = 1;
+					break;
+				}
+			}
+		}
+	}
+	return returnValue;
 }
 
-
 /**
-* returns 1 if there were a change, returns 0 if no change
-*
-*/
+ * returns 1 if there were a change, returns 0 if no change
+ *
+ */
 int mergeSingleArray(TileData tiles[], int numberCount, int* score) {
-    int internalReturn = 0;
-    if(numberCount == 1)
-        return 0;
-    internalReturn = mergeSingleArray(tiles +1, numberCount -1, score); //this ensures after current, it is ordered(all zero possible)
-    if(tiles[0].newValue == 0)
-        return internalReturn;
-    if (tiles[0].newValue ==tiles[1].newValue) {
-    	//the switching is because we need a move data.
-    	//TileData temp = tiles[0];
-    	//tiles[0] = tiles[1];
-    	//tiles[1] = temp;
+	int internalReturn = 0;
+	if (numberCount == 1)
+		return 0;
+	internalReturn = mergeSingleArray(tiles + 1, numberCount - 1, score); //this ensures after current, it is ordered(all zero possible)
+	if (tiles[0].newValue == 0)
+		return internalReturn;
+	if (tiles[0].newValue == tiles[1].newValue) {
+		//the switching is because we need a move data.
+		//TileData temp = tiles[0];
+		//tiles[0] = tiles[1];
+		//tiles[1] = temp;
 
-    	//now do the merge
-        tiles[1].newValue = tiles[1].newValue * 2;
-        tiles[1].mergeStatus = mergeOn;
-        tiles[0].mergeStatus = mergeOff;
-        tiles[0].newValue = 0;
-        tiles[0].totalMove++;
-        *score = *score + tiles[1].newValue;
+		//now do the merge
+		tiles[1].newValue = tiles[1].newValue * 2;
+		tiles[1].mergeStatus = mergeOn;
+		tiles[0].mergeStatus = mergeOff;
+		tiles[0].newValue = 0;
+		tiles[0].totalMove++;
+		*score = *score + tiles[1].newValue;
 
-        return 1;
-    }
-    return internalReturn;
+		return 1;
+	}
+	return internalReturn;
 }
 
-
 /**
-* moves the zeros to the end, then merge part is called.
-* moves zeros after that again.
-*/
-int moveSingleArray(TileData tiles[], int numberCount,int* score) {
-    int returnValue = 0;
-    returnValue = moveZerosInSingleArray(tiles, numberCount);
-    returnValue += mergeSingleArray(tiles,numberCount, score);
-    returnValue += moveZerosInSingleArray(tiles, numberCount);
-    return (returnValue > 0);
+ * moves the zeros to the end, then merge part is called.
+ * moves zeros after that again.
+ */
+int moveSingleArray(TileData tiles[], int numberCount, int* score) {
+	int returnValue = 0;
+	returnValue = moveZerosInSingleArray(tiles, numberCount);
+	returnValue += mergeSingleArray(tiles, numberCount, score);
+	returnValue += moveZerosInSingleArray(tiles, numberCount);
+	return (returnValue > 0);
 }
 //cleaned of zeros.
 
-
 int moveNumbers(BoardStatus &bs) {
-    int returnValue=0;
-    logMessage("before");
-    logMatrixState(bs.tiles);
-    setTilesForMove(bs.tiles);
-    switch(bs.moveDirection) {
-    case 2:
-        logMessage("moving down ");
-        for(int i=0; i<4; i++) {
-            TileData coloumn[4] = {bs.tiles[i][0],
-            		bs.tiles[i][1],
-            		bs.tiles[i][2],
-            		bs.tiles[i][3]};
-            if(moveSingleArray(coloumn,4, &(bs.score)) == 1)
-                returnValue = 1;
-            bs.tiles[i][0] = coloumn[0];
-            bs.tiles[i][1] = coloumn[1];
-            bs.tiles[i][2] = coloumn[2];
-            bs.tiles[i][3] = coloumn[3];
+	int returnValue = 0;
+	logMessage("before");
+	logMatrixState(bs.tiles);
+	setTilesForMove(bs.tiles);
+	switch (bs.moveDirection) {
+	case 6:
+		logMessage("moving down ");
+		for (int i = 0; i < 4; i++) {
+			TileData coloumn[4] = { bs.tiles[i][0], bs.tiles[i][1],
+					bs.tiles[i][2], bs.tiles[i][3] };
+			if (moveSingleArray(coloumn, 4, &(bs.score)) == 1)
+				returnValue = 1;
+			bs.tiles[i][0] = coloumn[0];
+			bs.tiles[i][1] = coloumn[1];
+			bs.tiles[i][2] = coloumn[2];
+			bs.tiles[i][3] = coloumn[3];
 
+		}
+		break;
+	case 8:
+		logMessage("moving left ");
+		for (int i = 0; i < 4; i++) {
+			TileData row[4] = { bs.tiles[3][i], bs.tiles[2][i], bs.tiles[1][i],
+					bs.tiles[0][i] };
+			if (moveSingleArray(row, 4, &(bs.score)) == 1)
+				returnValue = 1;
+			bs.tiles[3][i] = row[0];
+			bs.tiles[2][i] = row[1];
+			bs.tiles[1][i] = row[2];
+			bs.tiles[0][i] = row[3];
 
-        }
-        break;
-    case 4:
-        logMessage("moving left ");
-        for(int i=0; i<4; i++) {
-        	TileData row[4] = {bs.tiles[3][i],
-            		bs.tiles[2][i],
-            		bs.tiles[1][i],
-            		bs.tiles[0][i]
-            };
-            if(moveSingleArray(row,4, &(bs.score)) == 1)
-                returnValue = 1;
-            bs.tiles[3][i] = row[0];
-            bs.tiles[2][i] = row[1];
-            bs.tiles[1][i] = row[2];
-            bs.tiles[0][i] = row[3];
+		}
+		break;
+	case 2:
+		logMessage("moving right ");
+		for (int i = 0; i < 4; i++) {
+			TileData row[4] = { bs.tiles[0][i], bs.tiles[1][i], bs.tiles[2][i],
+					bs.tiles[3][i] };
+			if (moveSingleArray(row, 4, &(bs.score)) == 1)
+				returnValue = 1;
+			bs.tiles[0][i] = row[0];
+			bs.tiles[1][i] = row[1];
+			bs.tiles[2][i] = row[2];
+			bs.tiles[3][i] = row[3];
 
-        }
-        break;
-    case 6:
-        logMessage("moving right ");
-        for(int i=0; i<4; i++) {
-            TileData row[4] = {bs.tiles[0][i],
-            		bs.tiles[1][i],
-            		bs.tiles[2][i],
-            		bs.tiles[3][i]};
-            if(moveSingleArray(row,4, &(bs.score)) == 1)
-                returnValue = 1;
-            bs.tiles[0][i] = row[0];
-            bs.tiles[1][i] = row[1];
-            bs.tiles[2][i] = row[2];
-            bs.tiles[3][i] = row[3];
+		}
+		break;
+	case 4:
+		logMessage("moving up ");
+		for (int i = 0; i < 4; i++) {
+			TileData coloumn[4] = { bs.tiles[i][3], bs.tiles[i][2],
+					bs.tiles[i][1], bs.tiles[i][0] };
+			if (moveSingleArray(coloumn, 4, &(bs.score)) == 1)
+				returnValue = 1;
+			bs.tiles[i][3] = coloumn[0];
+			bs.tiles[i][2] = coloumn[1];
+			bs.tiles[i][1] = coloumn[2];
+			bs.tiles[i][0] = coloumn[3];
 
-        }
-        break;
-    case 8:
-        logMessage("moving up ");
-        for(int i=0; i<4; i++) {
-        	TileData coloumn[4] = {bs.tiles[i][3],
-            		bs.tiles[i][2],
-            		bs.tiles[i][1],
-            		bs.tiles[i][0]};
-            if(moveSingleArray(coloumn,4, &(bs.score)) == 1)
-                returnValue = 1;
-            bs.tiles[i][3] = coloumn[0];
-            bs.tiles[i][2] = coloumn[1];
-            bs.tiles[i][1] = coloumn[2];
-            bs.tiles[i][0] = coloumn[3];
-
-        }
-        break;
-    }
-    logMessage("after");
-    logMatrixState(bs.tiles);
-    fillTileMove(bs.tiles, bs.moveDirection);
-    logMessage("change");
-    logMoveData(bs.tiles);
-    return returnValue;
+		}
+		break;
+	}
+	logMessage("after");
+	logMatrixState(bs.tiles);
+	fillTileMove(bs.tiles, bs.moveDirection);
+	logMessage("change");
+	logMoveData(bs.tiles);
+	return returnValue;
 }
 
 /**
-* draw the texture to a SDL_Renderer, with given scale.
-*/
-void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst, SDL_Rect *clip=nullptr) {
-    SDL_RenderCopy(ren, tex, clip, &dst);
+ * draw the texture to a SDL_Renderer, with given scale.
+ */
+void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst,
+		SDL_Rect *clip = nullptr) {
+	SDL_RenderCopy(ren, tex, clip, &dst);
 }
 
 /**
-* draw the texture to a SDL_Renderer withot scaling.
-*/
-void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y, SDL_Rect *clip=nullptr) {
-    SDL_Rect dst;
-    dst.x = x;
-    dst.y = y;
-    if (clip!=nullptr) {
-        dst.w = clip->w;
-        dst.h = clip->h;
-    } else {
-        SDL_QueryTexture(tex, NULL, NULL, &dst.w, &dst.h);
-    }
-    renderTexture(tex, ren, dst, clip);
+ * draw the texture to a SDL_Renderer withot scaling.
+ */
+void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y,
+		SDL_Rect *clip = nullptr) {
+	SDL_Rect dst;
+	dst.x = x;
+	dst.y = y;
+	if (clip != nullptr) {
+		dst.w = clip->w;
+		dst.h = clip->h;
+	} else {
+		SDL_QueryTexture(tex, NULL, NULL, &dst.w, &dst.h);
+	}
+	renderTexture(tex, ren, dst, clip);
 }
 
 int insertNumber(TileData numbers[4][4]) {
-    logMessage("insert call");
-    int newNumber;
-    if(rand() % 5 == 4) // %20 chance
-        newNumber = 4;
-    else
-        newNumber = 2;
+	logMessage("insert call");
+	int newNumber;
+	if (rand() % 5 == 4) // %20 chance
+		newNumber = 4;
+	else
+		newNumber = 2;
 
-    int emptyCellCount = 0;
-    for(int i=0; i<4; i++) {
-        for(int j=0; j<4; j++) {
-            if(numbers[i][j].newValue == 0)
-                emptyCellCount++;
-        }
-    }
-    if (emptyCellCount == 0)
-        return 0;
+	int emptyCellCount = 0;
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			if (numbers[i][j].newValue == 0)
+				emptyCellCount++;
+		}
+	}
+	if (emptyCellCount == 0)
+		return 0;
 
-    int insertCell = rand() % emptyCellCount;
+	int insertCell = rand() % emptyCellCount;
 
-    emptyCellCount = 0; //now find the element and set
-    for(int i=0; i<4; i++) {
-        for(int j=0; j<4; j++) {
-            if(numbers[i][j].newValue == 0) {
-                if(emptyCellCount == insertCell) {
-                    numbers[i][j].newValue= newNumber;
-                    return 1;
-                } else {
-                    emptyCellCount++;
-                }
-            }
-        }
-    }
-    //this should newer happen, but gcc complains
-    assert(0);
-    return 0;
+	emptyCellCount = 0; //now find the element and set
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			if (numbers[i][j].newValue == 0) {
+				if (emptyCellCount == insertCell) {
+					numbers[i][j].newValue = newNumber;
+					numbers[i][j].startValue = -1; //for new entry
+					return 1;
+				} else {
+					emptyCellCount++;
+				}
+			}
+		}
+	}
+	//this should newer happen, but gcc complains
+	assert(0);
+	return 0;
 }
 
-void renderGame(RenderSystem renderSystem,  TileData numbers[4][4],int isGameOver, int score) {
-    //TODO these calculations are redudant
-    SDL_Rect clips[12];
-    for(int i=0; i<12; ++i) {
-        clips[i].x= i * TILE_WIDTH;
-        clips[i].y= 0;
-        clips[i].w = TILE_WIDTH;
-        clips[i].h = TILE_HEIGHT;
-    }
+int renderTiles(RenderSystem rs, TileData tiles[4][4], int frame,
+		int frameSpeed) {
 
-    SDL_Color color = {50,50,50};
+	int isFrameLast = 1;
+	int insertedTileX = -1;
+	int insertedTileY = -1;
 
-    SDL_RenderClear(renderSystem.renderer);
-    renderTexture(renderSystem.background,renderSystem.renderer,0,0, NULL);
+	//TODO these calculations are redudant
+	SDL_Rect clips[12];
+	for (int i = 0; i < 12; ++i) {
+		clips[i].x = i * TILE_WIDTH;
+		clips[i].y = 0;
+		clips[i].w = TILE_WIDTH;
+		clips[i].h = TILE_HEIGHT;
+	}
+	SDL_RenderClear(rs.renderer);
+	renderTexture(rs.background, rs.renderer, 0, 0, NULL);
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			if (tiles[i][j].startValue > 0) {
+				int isInPlace = 0;
+				int movement = frame * frameSpeed;
 
-    for(int i=0; i < 4; i++) {
-        for(int j=0; j < 4; j++) {
-            if(numbers[i][j].newValue > 0) {
-                int xpos=TILE_BASE_X + TILE_BASE_MARGIN + i * (TILE_BASE_MARGIN + TILE_WIDTH);
-                int ypos=TILE_BASE_Y + TILE_BASE_MARGIN + j * (TILE_BASE_MARGIN + TILE_HEIGHT);
-                int clipValue = log2(numbers[i][j].newValue) -1 ;//since 2 is the first one but it is 2^^1 not 0.
-                renderTexture(renderSystem.numberTiles,renderSystem.renderer,xpos,ypos, &clips[clipValue]);
-                //SDL_Texture* numberText = renderText(std::to_string(numbers[i][j]),"./res/Gauge-Regular.ttf",color,72, renderer);
-                //renderTexture(numberText,renderer,xpos + 20 ,ypos + 20, NULL);//the font is smaller than the tile
-            }
-        }
-    }
-    //render score
-    SDL_Texture* scoreText = renderText(std::to_string(score),"./res/Gauge-Regular.ttf",color,48, renderSystem.renderer);
-    renderTexture(scoreText,renderSystem.renderer, 500 ,170, NULL);//the font is smaller than the tile
+				int xpos = TILE_BASE_X + TILE_BASE_MARGIN
+						+ j * (TILE_BASE_MARGIN + TILE_WIDTH);
+				if (movement
+						>= ((TILE_BASE_MARGIN + TILE_WIDTH)
+								* abs(tiles[i][j].moveX))) {
+					//the tile is in final position on x;
+					xpos += (TILE_BASE_MARGIN + TILE_WIDTH) * tiles[i][j].moveX;
+					isInPlace = 1;
+				} else {
+					// tile is still moving
+					if (tiles[i][j].moveX > 0)
+						xpos += movement;
+					else
+						xpos -= movement;
+					isFrameLast = 0;
+					isInPlace = 0;
+				}
 
-    if(isGameOver == 1) {
-        color = {150,50,50};
-        SDL_Texture* gameOverText = renderText("Game Over!","./res/Gauge-Regular.ttf",color,72, renderSystem.renderer);
-        renderTexture(gameOverText,renderSystem.renderer, 40 ,SCREEN_HEIGHT / 2 - 20, NULL);//the font is smaller than the tile
-    }
+				int ypos = TILE_BASE_Y + TILE_BASE_MARGIN
+						+ i * (TILE_BASE_MARGIN + TILE_HEIGHT);
+				if (movement
+						>= ((TILE_BASE_MARGIN + TILE_WIDTH)
+								* abs(tiles[i][j].moveY))) {
+					//the tile is in final position on y;
+					ypos += (TILE_BASE_MARGIN + TILE_WIDTH) * tiles[i][j].moveY;
+					isInPlace = 1;
+				} else {
+					// tile is still moving
+					if (tiles[i][j].moveY > 0)
+						ypos += movement;
+					else
+						ypos -= movement;
+					isFrameLast = 0;
+					isInPlace = 0;
+				}
 
-    SDL_RenderPresent(renderSystem.renderer);
+				int clipValue;
+				int i2, j2;
+				if (isInPlace) {
+					i2 = i + tiles[i][j].moveY;
+					j2 = j + tiles[i][j].moveX;
+					//std::cout << "i2:" << i2 << " j2:" << j2 << " new Value:"
+					//		<< tiles[i2][j2].newValue << std::endl;
+					if (tiles[i2][j2].newValue == 0) {
+						clipValue = 0;
+					} else {
+						clipValue = log2(tiles[i2][j2].newValue) - 1; //since 2 is the first one but it is 2^^1 not 0.
+					}
+					//std::cout << "clip value " << clipValue << std::endl;
+				} else {
+					clipValue = log2(tiles[i][j].startValue) - 1;
+				}
+
+				renderTexture(rs.numberTiles, rs.renderer, xpos, ypos,
+						&clips[clipValue]);
+			} else if (tiles[i][j].newValue > 0 && tiles[i][j].startValue == -1){
+				//std::cout << "new value at [" << i << "," << j << "]"<< std::endl;
+				insertedTileX = i;
+				insertedTileY = j;
+			}
+		}
+	}
+	if(isFrameLast && (insertedTileX != -1 || insertedTileY != -1)){
+		//render the inserted one, since this is the last frame
+		std::cout << "new value at [" << insertedTileX << "," << insertedTileY << "]"<< std::endl;
+		int xpos = TILE_BASE_X + TILE_BASE_MARGIN
+				+ insertedTileY * (TILE_BASE_MARGIN + TILE_WIDTH);
+		int ypos = TILE_BASE_Y + TILE_BASE_MARGIN
+				+ insertedTileX * (TILE_BASE_MARGIN + TILE_HEIGHT);
+
+		int clipValue = log2(tiles[insertedTileX][insertedTileY].newValue) -1;
+		renderTexture(rs.numberTiles, rs.renderer, xpos, ypos,
+				&clips[clipValue]);
+
+	}
+	SDL_RenderPresent(rs.renderer);
+
+	return isFrameLast;
+}
+
+void renderGame(RenderSystem renderSystem, TileData numbers[4][4],
+		int isGameOver, int score) {
+
+	SDL_Color color = { 50, 50, 50 };
+
+	int i = 0;
+	while (!renderTiles(renderSystem, numbers, i++, 10)) {
+		SDL_Delay(5);
+	}
+	//render score
+	SDL_Texture* scoreText = renderText(std::to_string(score),
+			"./res/Gauge-Regular.ttf", color, 48, renderSystem.renderer);
+	renderTexture(scoreText, renderSystem.renderer, 500, 170, NULL); //the font is smaller than the tile
+
+	if (isGameOver == 1) {
+		color = {150,50,50};
+		SDL_Texture* gameOverText = renderText("Game Over!","./res/Gauge-Regular.ttf",color,72, renderSystem.renderer);
+		renderTexture(gameOverText,renderSystem.renderer, 40 ,SCREEN_HEIGHT / 2 - 20, NULL); //the font is smaller than the tile
+	}
+
+	SDL_RenderPresent(renderSystem.renderer);
 }
 
 void initBoard(TileData tiles[4][4]) {
-    srand (time(NULL));
-    memset(tiles, 0, 16 * sizeof(TileData));
-    tiles[rand() % 4][rand() % 4].newValue = 2;
+	srand(time(NULL));
+	memset(tiles, 0, 16 * sizeof(TileData));
+	int values[4] = { rand() % 4, rand() % 4, rand() % 4, rand() % 4 };
+	tiles[values[0]][values[1]].newValue = 2;
+	tiles[values[0]][values[1]].startValue = 2;
 
-    tiles[rand() % 4][rand() % 4].newValue += 2;
+	tiles[values[2]][values[3]].newValue += 2;
+	tiles[values[2]][values[3]].startValue += 2;
 }
 
 void endGame(TileData numbers[4][4]) {
 
 }
 /**
-* it checks if the game is over.
-*
-*/
+ * it checks if the game is over.
+ *
+ */
 int checkGameOver(TileData tiles[4][4]) {
-    //TODO optimise this part
+	//TODO optimise this part
 
-    //if there are 2 same adjent cell, it is not over. This for
-    for(int i = 0; i< 3; i++) {
-        for(int j = 0; j< 3; j++) {
-            if(tiles[i][j].newValue == tiles[i][j+1].newValue || tiles[i][j].newValue == tiles[i+1][j].newValue || tiles[i][j].newValue == 0) {
-                return 0;
-            }
-        }
-        if(tiles[i][3].newValue == tiles[i+1][3].newValue || tiles[i][3].newValue == 0) // this is the last coloumn check.
-            return 0;
-    }
-    for(int j=0; j<3; j++) { //this is the last row check.
-        if(tiles[3][j].newValue == tiles[3][j+1].newValue || tiles[3][j].newValue == 0)
-            return 0;
-    }
-    return 1;
-
-
-
+	//if there are 2 same adjent cell, it is not over. This for
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			if (tiles[i][j].newValue == tiles[i][j + 1].newValue
+					|| tiles[i][j].newValue == tiles[i + 1][j].newValue
+					|| tiles[i][j].newValue == 0) {
+				return 0;
+			}
+		}
+		if (tiles[i][3].newValue == tiles[i + 1][3].newValue
+				|| tiles[i][3].newValue == 0) // this is the last coloumn check.
+			return 0;
+	}
+	for (int j = 0; j < 3; j++) { //this is the last row check.
+		if (tiles[3][j].newValue == tiles[3][j + 1].newValue
+				|| tiles[3][j].newValue == 0)
+			return 0;
+	}
+	return 1;
 
 }
 
 /**
-* This function overwrites old matrix.
-*
-*/
+ * This function overwrites old matrix.
+ *
+ */
 int backupNumbersMatrix(TileData original[4][4], TileData backup[4][4]) {
-    for(int i=0; i<4; i++) {
-        for(int j=0; j<4; j++) {
-            backup[i][j] = original[i][j];
-        }
-    }
-    return 0;
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			backup[i][j] = original[i][j];
+		}
+	}
+	return 0;
 }
 
 int main(int argc, char **argv) {
-    RenderSystem currentRS;
-    BoardStatus board;
-    initBoard(board.tiles);
+	RenderSystem currentRS;
+	BoardStatus board;
+	initBoard(board.tiles);
 
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-        std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
-        return 1;
-    }
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+		std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
+		return 1;
+	}
 
-    SDL_Window *win = SDL_CreateWindow("Lesson 2", 100, 100,
-                                       SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    if(win == nullptr) {
-        logSDLError(std::cout, "SDL_CreateWindow");
-        return 1;
-    }
+	SDL_Window *win = SDL_CreateWindow("Lesson 2", 100, 100, SCREEN_WIDTH,
+			SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+	if (win == nullptr) {
+		logSDLError(std::cout, "SDL_CreateWindow");
+		return 1;
+	}
 
-    currentRS.renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    if (currentRS.renderer == nullptr) {
-        logSDLError(std::cout, "SDL_CreateRenderer");
-        return 1;
-    }
+	currentRS.renderer = SDL_CreateRenderer(win, -1,
+			SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (currentRS.renderer == nullptr) {
+		logSDLError(std::cout, "SDL_CreateRenderer");
+		return 1;
+	}
 
-    //this is for performance.
-    if ((IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG) != IMG_INIT_PNG) {
-        logSDLError(std::cout, "IMG_Init");
-        return 1;
-    }
+	//this is for performance.
+	if ((IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG) != IMG_INIT_PNG) {
+		logSDLError(std::cout, "IMG_Init");
+		return 1;
+	}
 
-    if (TTF_Init() != 0) {
-        logSDLError(std::cout, "TTF_Init");
-        return 1;
-    }
+	if (TTF_Init() != 0) {
+		logSDLError(std::cout, "TTF_Init");
+		return 1;
+	}
 
-    currentRS.background = loadTexture("./res/background.png",currentRS.renderer);
-    currentRS.numberTiles = loadTexture("./res/numbers.png",currentRS.renderer);
+	currentRS.background = loadTexture("./res/background.png",
+			currentRS.renderer);
+	currentRS.numberTiles = loadTexture("./res/numbers.png",
+			currentRS.renderer);
 
+	if (currentRS.background == nullptr || currentRS.numberTiles == nullptr) {
+		logSDLError(std::cout, "LoadTexture");
+		return 4;
+	}
 
-    if(currentRS.background == nullptr || currentRS.numberTiles == nullptr) {
-        logSDLError(std::cout, "LoadTexture");
-        return 4;
-    }
-
-    SDL_Event e;
-    //initial render
-    renderGame(currentRS, board.tiles, board.isGameOver, board.score);
-    while (!board.quit) {
+	SDL_Event e;
+	//initial render
+	renderGame(currentRS, board.tiles, board.isGameOver, board.score);
+	while (!board.quit) {
 //        while(SDL_PollEvent(&e)) {
-        SDL_WaitEvent(&e);
-        {
-            if(e.type == SDL_QUIT)
-            	board.quit=true;
-            if(e.type == SDL_KEYDOWN) {
-                switch (e.key.keysym.sym) {
-                case SDLK_ESCAPE:
-                	board.quit = true;
-                    break;
-                case SDLK_q:
-                	board.quit=true;
-                    break;
-                case SDLK_UP:
-                    if(!board.isGameOver) {
-                        board.moveDirection = 8;
-                        backupNumbersMatrix(board.tiles,board.oldNumbers);
-                        board.isMoved = moveNumbers(board);
-                    }
-                    break;
-                case SDLK_DOWN:
-                    if(!board.isGameOver) {
-                        board.moveDirection = 2;
-                        backupNumbersMatrix(board.tiles,board.oldNumbers);
-                        board.isMoved = moveNumbers(board);
-                    }
-                    break;
+		SDL_WaitEvent(&e);
+		{
+			if (e.type == SDL_MOUSEMOTION) {
+				continue;
+			}
+			if (e.type == SDL_QUIT)
+				board.quit = true;
+			if (e.type == SDL_KEYDOWN) {
+				switch (e.key.keysym.sym) {
+				case SDLK_ESCAPE:
+					board.quit = true;
+					break;
+				case SDLK_q:
+					board.quit = true;
+					break;
+				case SDLK_UP:
+					if (!board.isGameOver) {
+						board.moveDirection = 8;
+						backupNumbersMatrix(board.tiles, board.oldNumbers);
+						board.isMoved = moveNumbers(board);
+					}
+					break;
+				case SDLK_DOWN:
+					if (!board.isGameOver) {
+						board.moveDirection = 2;
+						backupNumbersMatrix(board.tiles, board.oldNumbers);
+						board.isMoved = moveNumbers(board);
+					}
+					break;
 
-                case SDLK_LEFT:
-                    if(!board.isGameOver) {
-                        board.moveDirection = 4;
-                        backupNumbersMatrix(board.tiles,board.oldNumbers);
-                        board.isMoved = moveNumbers(board);
-                    }
-                    break;
+				case SDLK_LEFT:
+					if (!board.isGameOver) {
+						board.moveDirection = 4;
+						backupNumbersMatrix(board.tiles, board.oldNumbers);
+						board.isMoved = moveNumbers(board);
+					}
+					break;
 
-                case SDLK_RIGHT:
-                    if(!board.isGameOver) {
-                        board.moveDirection = 6;
-                        backupNumbersMatrix(board.tiles,board.oldNumbers);
-                        board.isMoved = moveNumbers(board);
-                    }
-                    break;
+				case SDLK_RIGHT:
+					if (!board.isGameOver) {
+						board.moveDirection = 6;
+						backupNumbersMatrix(board.tiles, board.oldNumbers);
+						board.isMoved = moveNumbers(board);
+					}
+					break;
 
-                default:
-                    break;
-                }
-            }
-        }
+				default:
+					break;
+				}
+			}
+		}
 
-        //if move is done, add a number to a empty cell
-        if(board.isMoved == 1) {
-            if(!insertNumber(board.tiles)) {
-                endGame(board.tiles);
-                board.isGameOver=1;
-            }
-            //don't move this over insert number.
+		//if move is done, add a number to a empty cell
+		if (board.isMoved == 1) {
+			if (!insertNumber(board.tiles)) {
+				endGame(board.tiles);
+				board.isGameOver = 1;
+			}
+			logMessage("after insert");
+			logMatrixState(board.tiles);
+			renderGame(currentRS, board.tiles, board.isGameOver, board.score);
+			board.isMoved = 0;
+		} else {
 
-            board.isMoved=0;
-        } else {
+			if (checkGameOver(board.tiles)) {
+				board.isGameOver = 1;
+			}
 
-            if(checkGameOver(board.tiles)) {
-                board.isGameOver = 1;
-            }
+		}
 
-        }
-        renderGame(currentRS, board.tiles, board.isGameOver, board.score);
+	}
 
-    }
+	SDL_DestroyTexture(currentRS.numberTiles);
+	SDL_DestroyTexture(currentRS.background);
+	SDL_DestroyRenderer(currentRS.renderer);
+	SDL_DestroyWindow(win);
+	SDL_Quit();
 
-    SDL_DestroyTexture(currentRS.numberTiles);
-    SDL_DestroyTexture(currentRS.background);
-    SDL_DestroyRenderer(currentRS.renderer);
-    SDL_DestroyWindow(win);
-    SDL_Quit();
-
-    return 0;
+	return 0;
 }
