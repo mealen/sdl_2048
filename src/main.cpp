@@ -150,13 +150,13 @@ void fillTileMove(TileData tiles[4][4], int moveDirection) {
     	for (int j = 0; j < 4; ++j) {
     		switch (moveDirection) {
 				case 2:
-					baseX = -1;	break;
+					baseX = 1;	break;
 				case 4:
 					baseY = -1;	break;
 				case 6:
 					baseY = 1;	break;
 				case 8:
-					baseX = 1;	break;
+					baseX = -1;	break;
 				default:
 					break;
 			}
