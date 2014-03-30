@@ -1,8 +1,8 @@
 #include <iostream>
 #include <cassert>
 #include <string>
+#include <ctime>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
@@ -37,7 +37,7 @@ typedef struct {
 	int startY;
 	int moveX;
 	int moveY;
-	int totalMove = 0;
+	int totalMove;
 	int startValue;
 	int newValue;
 	enum possibleMerges mergeStatus;
@@ -46,11 +46,11 @@ typedef struct {
 typedef struct {
 	TileData tiles[4][4];
 	TileData oldNumbers[4][4]; // = {0};
-	int moveDirection = 0; //2 down, 8 up, 4 left, 6 right.
-	int isGameOver = 0;
-	int score = 0;
-	int isMoved = 0;
-	bool quit = false;
+	int moveDirection; //2 down, 8 up, 4 left, 6 right.
+	int isGameOver;
+	int score;
+	int isMoved;
+	bool quit;
 } BoardStatus;
 
 void logMessage(const std::string &msg) {
@@ -60,8 +60,8 @@ void logMessage(const std::string &msg) {
 }
 
 /**
- * Log an sdl error.
- */
+* Log an sdl error.
+*/
 void logSDLError(std::ostream &os, const std::string &msg) {
 	os << msg << " error: " << SDL_GetError() << std::endl;
 }
@@ -79,7 +79,7 @@ void logMoveData(TileData tileData[4][4]) {
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
 			std::cout << "[" << tileData[i][j].moveX << ","
-					<< tileData[i][j].moveY << "]";
+				<< tileData[i][j].moveY << "]";
 			std::cout << "[" << tileData[i][j].startValue << "] ";
 			//std::cout << "[" << tileData[j][i].startX << ","
 			//		<< tileData[j][i].startY << "," << tileData[j][i].totalMove
@@ -90,7 +90,7 @@ void logMoveData(TileData tileData[4][4]) {
 }
 
 SDL_Texture* renderText(const std::string &message, const std::string &fontFile,
-		SDL_Color color, int fontSize, SDL_Renderer *renderer) {
+	SDL_Color color, int fontSize, SDL_Renderer *renderer) {
 	//Open the font
 	TTF_Font *font = TTF_OpenFont(fontFile.c_str(), fontSize);
 	if (font == nullptr) {
@@ -118,7 +118,7 @@ SDL_Texture* renderText(const std::string &message, const std::string &fontFile,
 SDL_Texture* loadTexture(const std::string &file, SDL_Renderer *ren) {
 	SDL_Texture *texture = nullptr;
 
-//     SDL_Surface *loadedImage = SDL_LoadBMP(file.c_str());
+	//     SDL_Surface *loadedImage = SDL_LoadBMP(file.c_str());
 	texture = IMG_LoadTexture(ren, file.c_str());
 
 	if (texture == nullptr) {
@@ -164,9 +164,9 @@ void fillTileMove(TileData tiles[4][4], int moveDirection) {
 			}
 
 			tiles[tiles[i][j].startX][tiles[i][j].startY].moveX =
-					tiles[i][j].totalMove * baseX;
+				tiles[i][j].totalMove * baseX;
 			tiles[tiles[i][j].startX][tiles[i][j].startY].moveY =
-					tiles[i][j].totalMove * baseY;
+				tiles[i][j].totalMove * baseY;
 			//tiles[i][j].moveX = i -tiles[i][j].startX;
 			//tiles[i][j].moveY = j -tiles[i][j].startY;
 
@@ -199,9 +199,9 @@ int moveZerosInSingleArray(TileData tiles[], int numberCount) {
 }
 
 /**
- * returns 1 if there were a change, returns 0 if no change
- *
- */
+* returns 1 if there were a change, returns 0 if no change
+*
+*/
 int mergeSingleArray(TileData tiles[], int numberCount, int* score) {
 	int internalReturn = 0;
 	if (numberCount == 1)
@@ -229,9 +229,9 @@ int mergeSingleArray(TileData tiles[], int numberCount, int* score) {
 }
 
 /**
- * moves the zeros to the end, then merge part is called.
- * moves zeros after that again.
- */
+* moves the zeros to the end, then merge part is called.
+* moves zeros after that again.
+*/
 int moveSingleArray(TileData tiles[], int numberCount, int* score) {
 	int returnValue = 0;
 	returnValue = moveZerosInSingleArray(tiles, numberCount);
@@ -251,7 +251,7 @@ int moveNumbers(BoardStatus &bs) {
 		logMessage("moving down ");
 		for (int i = 0; i < 4; i++) {
 			TileData coloumn[4] = { bs.tiles[i][0], bs.tiles[i][1],
-					bs.tiles[i][2], bs.tiles[i][3] };
+				bs.tiles[i][2], bs.tiles[i][3] };
 			if (moveSingleArray(coloumn, 4, &(bs.score)) == 1)
 				returnValue = 1;
 			bs.tiles[i][0] = coloumn[0];
@@ -265,7 +265,7 @@ int moveNumbers(BoardStatus &bs) {
 		logMessage("moving left ");
 		for (int i = 0; i < 4; i++) {
 			TileData row[4] = { bs.tiles[3][i], bs.tiles[2][i], bs.tiles[1][i],
-					bs.tiles[0][i] };
+				bs.tiles[0][i] };
 			if (moveSingleArray(row, 4, &(bs.score)) == 1)
 				returnValue = 1;
 			bs.tiles[3][i] = row[0];
@@ -279,7 +279,7 @@ int moveNumbers(BoardStatus &bs) {
 		logMessage("moving right ");
 		for (int i = 0; i < 4; i++) {
 			TileData row[4] = { bs.tiles[0][i], bs.tiles[1][i], bs.tiles[2][i],
-					bs.tiles[3][i] };
+				bs.tiles[3][i] };
 			if (moveSingleArray(row, 4, &(bs.score)) == 1)
 				returnValue = 1;
 			bs.tiles[0][i] = row[0];
@@ -293,7 +293,7 @@ int moveNumbers(BoardStatus &bs) {
 		logMessage("moving up ");
 		for (int i = 0; i < 4; i++) {
 			TileData coloumn[4] = { bs.tiles[i][3], bs.tiles[i][2],
-					bs.tiles[i][1], bs.tiles[i][0] };
+				bs.tiles[i][1], bs.tiles[i][0] };
 			if (moveSingleArray(coloumn, 4, &(bs.score)) == 1)
 				returnValue = 1;
 			bs.tiles[i][3] = coloumn[0];
@@ -313,25 +313,26 @@ int moveNumbers(BoardStatus &bs) {
 }
 
 /**
- * draw the texture to a SDL_Renderer, with given scale.
- */
+* draw the texture to a SDL_Renderer, with given scale.
+*/
 void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst,
-		SDL_Rect *clip = nullptr) {
+	SDL_Rect *clip = nullptr) {
 	SDL_RenderCopy(ren, tex, clip, &dst);
 }
 
 /**
- * draw the texture to a SDL_Renderer withot scaling.
- */
+* draw the texture to a SDL_Renderer withot scaling.
+*/
 void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y,
-		SDL_Rect *clip = nullptr) {
+	SDL_Rect *clip = nullptr) {
 	SDL_Rect dst;
 	dst.x = x;
 	dst.y = y;
 	if (clip != nullptr) {
 		dst.w = clip->w;
 		dst.h = clip->h;
-	} else {
+	}
+	else {
 		SDL_QueryTexture(tex, NULL, NULL, &dst.w, &dst.h);
 	}
 	renderTexture(tex, ren, dst, clip);
@@ -366,7 +367,8 @@ int insertNumber(TileData numbers[4][4]) {
 					numbers[i][j].startValue = -1 * numbers[i][j].startValue - 1; //for new entry it is negated, and +1 is incase of 0
 					logMoveData(numbers);
 					return 1;
-				} else {
+				}
+				else {
 					emptyCellCount++;
 				}
 			}
@@ -378,7 +380,7 @@ int insertNumber(TileData numbers[4][4]) {
 }
 
 int renderTiles(RenderSystem rs, TileData tiles[4][4], int frame,
-		int frameSpeed) {
+	int frameSpeed) {
 
 	int isFrameLast = 1;
 	int insertedTileX = -1;
@@ -402,13 +404,14 @@ int renderTiles(RenderSystem rs, TileData tiles[4][4], int frame,
 				int movement = frame * frameSpeed;
 
 				int xpos = TILE_BASE_X + TILE_BASE_MARGIN
-						+ j * (TILE_BASE_MARGIN + TILE_WIDTH);
+					+ j * (TILE_BASE_MARGIN + TILE_WIDTH);
 				if (movement >=
-						((TILE_BASE_MARGIN + TILE_WIDTH)* abs(tiles[i][j].moveX))) {
+					((TILE_BASE_MARGIN + TILE_WIDTH)* abs(tiles[i][j].moveX))) {
 					//the tile is in final position on x;
 					xpos += (TILE_BASE_MARGIN + TILE_WIDTH) * tiles[i][j].moveX;
 					isInPlace = 1;
-				} else {
+				}
+				else {
 					// tile is still moving
 					if (tiles[i][j].moveX > 0)
 						xpos += movement;
@@ -419,14 +422,15 @@ int renderTiles(RenderSystem rs, TileData tiles[4][4], int frame,
 				}
 
 				int ypos = TILE_BASE_Y + TILE_BASE_MARGIN
-						+ i * (TILE_BASE_MARGIN + TILE_HEIGHT);
+					+ i * (TILE_BASE_MARGIN + TILE_HEIGHT);
 				if (movement
-						>= ((TILE_BASE_MARGIN + TILE_WIDTH)
-								* abs(tiles[i][j].moveY))) {
+					>= ((TILE_BASE_MARGIN + TILE_WIDTH)
+					* abs(tiles[i][j].moveY))) {
 					//the tile is in final position on y;
 					ypos += (TILE_BASE_MARGIN + TILE_WIDTH) * tiles[i][j].moveY;
 					isInPlace = 1;
-				} else {
+				}
+				else {
 					// tile is still moving
 					if (tiles[i][j].moveY > 0)
 						ypos += movement;
@@ -443,39 +447,41 @@ int renderTiles(RenderSystem rs, TileData tiles[4][4], int frame,
 					j2 = j + tiles[i][j].moveX;
 					//std::cout << "i:" << i << " j:" << j << " inplace" << std::endl;
 					//		<< tiles[i2][j2].newValue << std::endl;
-					if (tiles[i2][j2].newValue == 0 ) {
+					if (tiles[i2][j2].newValue == 0) {
 						clipValue = 0;
-					} else {
+					}
+					else {
 						clipValue = log2(tiles[i2][j2].newValue) - 1; //since 2 is the first one but it is 2^^1 not 0.
 					}
 					//std::cout << "clip value " << clipValue << std::endl;
-				} else {
+				}
+				else {
 					std::cout << "startvalue " << tiles[i][j].startValue << " newValue " << tiles[i][j].newValue << std::endl;
 					int tileStartValue = abs(tiles[i][j].startValue) - abs(tiles[i][j].startValue) % 2; //this calculates if an insert is done to that point.
 					clipValue = log2(tileStartValue) - 1;
 				}
 
 				renderTexture(rs.numberTiles, rs.renderer, xpos, ypos,
-						&clips[clipValue]);
+					&clips[clipValue]);
 			}
-			if (tiles[i][j].newValue > 0 && tiles[i][j].startValue <= -1	){
+			if (tiles[i][j].newValue > 0 && tiles[i][j].startValue <= -1){
 				//std::cout << "new value at [" << i << "," << j << "]"<< std::endl;
 				insertedTileX = i;
 				insertedTileY = j;
 			}
 		}
 	}
-	if(isFrameLast && (insertedTileX != -1 || insertedTileY != -1)){
+	if (isFrameLast && (insertedTileX != -1 || insertedTileY != -1)){
 		//render the inserted one, since this is the last frame
-		std::cout << "new value at [" << insertedTileX << "," << insertedTileY << "]"<< std::endl;
+		std::cout << "new value at [" << insertedTileX << "," << insertedTileY << "]" << std::endl;
 		int xpos = TILE_BASE_X + TILE_BASE_MARGIN
-				+ insertedTileY * (TILE_BASE_MARGIN + TILE_WIDTH);
+			+ insertedTileY * (TILE_BASE_MARGIN + TILE_WIDTH);
 		int ypos = TILE_BASE_Y + TILE_BASE_MARGIN
-				+ insertedTileX * (TILE_BASE_MARGIN + TILE_HEIGHT);
+			+ insertedTileX * (TILE_BASE_MARGIN + TILE_HEIGHT);
 
-		int clipValue = log2(tiles[insertedTileX][insertedTileY].newValue) -1;
+		int clipValue = log2(tiles[insertedTileX][insertedTileY].newValue) - 1;
 		renderTexture(rs.numberTiles, rs.renderer, xpos, ypos,
-				&clips[clipValue]);
+			&clips[clipValue]);
 
 	}
 	SDL_RenderPresent(rs.renderer);
@@ -484,7 +490,7 @@ int renderTiles(RenderSystem rs, TileData tiles[4][4], int frame,
 }
 
 void renderGame(RenderSystem renderSystem, TileData numbers[4][4],
-		int isGameOver, int score) {
+	int isGameOver, int score) {
 
 	SDL_Color color = { 50, 50, 50 };
 
@@ -494,13 +500,13 @@ void renderGame(RenderSystem renderSystem, TileData numbers[4][4],
 	}
 	//render score
 	SDL_Texture* scoreText = renderText(std::to_string(score),
-			"./res/Gauge-Regular.ttf", color, 48, renderSystem.renderer);
+		"./res/Gauge-Regular.ttf", color, 48, renderSystem.renderer);
 	renderTexture(scoreText, renderSystem.renderer, 500, 170, NULL); //the font is smaller than the tile
 
 	if (isGameOver == 1) {
-		color = {150,50,50};
-		SDL_Texture* gameOverText = renderText("Game Over!","./res/Gauge-Regular.ttf",color,72, renderSystem.renderer);
-		renderTexture(gameOverText,renderSystem.renderer, 40 ,SCREEN_HEIGHT / 2 - 20, NULL); //the font is smaller than the tile
+		color = { 150, 50, 50 };
+		SDL_Texture* gameOverText = renderText("Game Over!", "./res/Gauge-Regular.ttf", color, 72, renderSystem.renderer);
+		renderTexture(gameOverText, renderSystem.renderer, 40, SCREEN_HEIGHT / 2 - 20, NULL); //the font is smaller than the tile
 	}
 
 	SDL_RenderPresent(renderSystem.renderer);
@@ -521,9 +527,9 @@ void endGame(TileData numbers[4][4]) {
 
 }
 /**
- * it checks if the game is over.
- *
- */
+* it checks if the game is over.
+*
+*/
 int checkGameOver(TileData tiles[4][4]) {
 	//TODO optimise this part
 
@@ -531,18 +537,18 @@ int checkGameOver(TileData tiles[4][4]) {
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
 			if (tiles[i][j].newValue == tiles[i][j + 1].newValue
-					|| tiles[i][j].newValue == tiles[i + 1][j].newValue
-					|| tiles[i][j].newValue == 0) {
+				|| tiles[i][j].newValue == tiles[i + 1][j].newValue
+				|| tiles[i][j].newValue == 0) {
 				return 0;
 			}
 		}
 		if (tiles[i][3].newValue == tiles[i + 1][3].newValue
-				|| tiles[i][3].newValue == 0) // this is the last coloumn check.
+			|| tiles[i][3].newValue == 0) // this is the last coloumn check.
 			return 0;
 	}
 	for (int j = 0; j < 3; j++) { //this is the last row check.
 		if (tiles[3][j].newValue == tiles[3][j + 1].newValue
-				|| tiles[3][j].newValue == 0)
+			|| tiles[3][j].newValue == 0)
 			return 0;
 	}
 	return 1;
@@ -550,9 +556,9 @@ int checkGameOver(TileData tiles[4][4]) {
 }
 
 /**
- * This function overwrites old matrix.
- *
- */
+* This function overwrites old matrix.
+*
+*/
 int backupNumbersMatrix(TileData original[4][4], TileData backup[4][4]) {
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
@@ -565,7 +571,20 @@ int backupNumbersMatrix(TileData original[4][4], TileData backup[4][4]) {
 int main(int argc, char **argv) {
 	RenderSystem currentRS;
 	BoardStatus board;
+
+	board.isGameOver = 0;
+	board.moveDirection = 0;
+	board.score = 0;
+	board.isMoved = 0;
+	board.quit = false;
+
 	initBoard(board.tiles);
+
+	for (int i = 0; i < 4; i++){
+		for (int j = 0; j < 4; j++){
+			board.tiles[i][j].totalMove = 0;
+		}
+	}
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 		std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
@@ -573,14 +592,14 @@ int main(int argc, char **argv) {
 	}
 
 	SDL_Window *win = SDL_CreateWindow("Lesson 2", 100, 100, SCREEN_WIDTH,
-			SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	if (win == nullptr) {
 		logSDLError(std::cout, "SDL_CreateWindow");
 		return 1;
 	}
 
 	currentRS.renderer = SDL_CreateRenderer(win, -1,
-			SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (currentRS.renderer == nullptr) {
 		logSDLError(std::cout, "SDL_CreateRenderer");
 		return 1;
@@ -598,9 +617,9 @@ int main(int argc, char **argv) {
 	}
 
 	currentRS.background = loadTexture("./res/background.png",
-			currentRS.renderer);
+		currentRS.renderer);
 	currentRS.numberTiles = loadTexture("./res/numbers.png",
-			currentRS.renderer);
+		currentRS.renderer);
 
 	if (currentRS.background == nullptr || currentRS.numberTiles == nullptr) {
 		logSDLError(std::cout, "LoadTexture");
@@ -611,7 +630,7 @@ int main(int argc, char **argv) {
 	//initial render
 	renderGame(currentRS, board.tiles, board.isGameOver, board.score);
 	while (!board.quit) {
-//        while(SDL_PollEvent(&e)) {
+		//        while(SDL_PollEvent(&e)) {
 		SDL_WaitEvent(&e);
 		{
 			if (e.type == SDL_MOUSEMOTION) {
@@ -677,7 +696,8 @@ int main(int argc, char **argv) {
 
 			renderGame(currentRS, board.tiles, board.isGameOver, board.score);
 			board.isMoved = 0;
-		} else {
+		}
+		else {
 
 			if (checkGameOver(board.tiles)) {
 				board.isGameOver = 1;
