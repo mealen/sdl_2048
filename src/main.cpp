@@ -24,6 +24,8 @@ const int TILE_BASE_HEIGHT = 440;
 const int TILE_BASE_MARGIN = 10;
 const int ANIM_SPEED = 10;
 
+SDL_Color color = { 50, 50, 50 };
+
 
 typedef struct {
 	SDL_Renderer* renderer;
@@ -103,8 +105,18 @@ void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y,
 	renderTexture(tex, ren, dst, clip);
 }
 
-int renderTiles(RenderSystem rs, TileData tiles[4][4], int frame,
-	int frameSpeed) {
+void renderScore(int score, RenderSystem renderSystem, SDL_Color color){
+	//render score
+
+	std::ostringstream scoreString;
+	scoreString << score;
+	SDL_Texture* scoreText = renderText(scoreString.str(),
+		"./res/Gauge-Regular.ttf", color, 48, renderSystem.renderer);
+	renderTexture(scoreText, renderSystem.renderer, 500, 170, NULL); //the font is smaller than the tile
+}
+
+int renderTilesAndScore(RenderSystem rs, TileData tiles[4][4], int frame,
+	int frameSpeed, int score) {
 
 	int isFrameLast = 1;
 	int insertedTileX = -1;
@@ -120,6 +132,7 @@ int renderTiles(RenderSystem rs, TileData tiles[4][4], int frame,
 	}
 	SDL_RenderClear(rs.renderer);
 	renderTexture(rs.background, rs.renderer, 0, 0, NULL);
+	renderScore(score, rs, color);
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
 			//std::cout << "[" << i << "," << j << "]";
@@ -213,22 +226,15 @@ int renderTiles(RenderSystem rs, TileData tiles[4][4], int frame,
 	return isFrameLast;
 }
 
+
 void renderGame(RenderSystem renderSystem, TileData numbers[4][4],
 	int isGameOver, int score) {
 
-	SDL_Color color = { 50, 50, 50 };
 
 	int i = 0;
-	while (!renderTiles(renderSystem, numbers, i++, 10)) {
+	while (!renderTilesAndScore(renderSystem, numbers, i++, 10, score)) {
 		SDL_Delay(1);
 	}
-	//render score
-
-	std::ostringstream scoreString;
-	scoreString << score;
-	SDL_Texture* scoreText = renderText(scoreString.str(),
-		"./res/Gauge-Regular.ttf", color, 48, renderSystem.renderer);
-	renderTexture(scoreText, renderSystem.renderer, 500, 170, NULL); //the font is smaller than the tile
 
 	if (isGameOver == 1) {
 		//color = { 150, 50, 50 };
