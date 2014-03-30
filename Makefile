@@ -6,7 +6,8 @@ CXX = g++
 SDL_LIB = -L/usr/lib/x86_64-linux-gnu -lSDL2 -lSDL2_image -lSDL2_ttf
 SDL_INCLUDE = -I/usr/include
 # You may need to change -std=c++11 to -std=c++0x if your compiler is a bit older
-CXXFLAGS = -Wall -c -ggdb -std=c++11 $(SDL_INCLUDE)
+#CXXFLAGS = -Wall -c -ggdb -std=c++11 $(SDL_INCLUDE)
+CXXFLAGS = -Wall -c -ggdb -std=c++98 $(SDL_INCLUDE)
 LDFLAGS = $(SDL_LIB)
 EXE = SDL_2048
 BINARY_PATH=bin/

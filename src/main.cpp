@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cassert>
 #include <string>
+#include <sstream>
 #include <ctime>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -93,20 +94,20 @@ SDL_Texture* renderText(const std::string &message, const std::string &fontFile,
 	SDL_Color color, int fontSize, SDL_Renderer *renderer) {
 	//Open the font
 	TTF_Font *font = TTF_OpenFont(fontFile.c_str(), fontSize);
-	if (font == nullptr) {
+	if (font == NULL) {
 		logSDLError(std::cout, "TTF_OpenFont");
-		return nullptr;
+		return NULL;
 	}
 	//We need to first render to a surface as that's what TTF_RenderText
 	//returns, then load that surface into a texture
 	SDL_Surface *surf = TTF_RenderText_Blended(font, message.c_str(), color);
-	if (surf == nullptr) {
+	if (surf == NULL) {
 		TTF_CloseFont(font);
 		logSDLError(std::cout, "TTF_RenderText");
-		return nullptr;
+		return NULL;
 	}
 	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surf);
-	if (texture == nullptr) {
+	if (texture == NULL) {
 		logSDLError(std::cout, "CreateTexture");
 	}
 	//Clean up the surface and font
@@ -116,12 +117,12 @@ SDL_Texture* renderText(const std::string &message, const std::string &fontFile,
 }
 
 SDL_Texture* loadTexture(const std::string &file, SDL_Renderer *ren) {
-	SDL_Texture *texture = nullptr;
+	SDL_Texture *texture = NULL;
 
 	//     SDL_Surface *loadedImage = SDL_LoadBMP(file.c_str());
 	texture = IMG_LoadTexture(ren, file.c_str());
 
-	if (texture == nullptr) {
+	if (texture == NULL) {
 		logSDLError(std::cout, "IMG_LoadTexture");
 	}
 	return texture;
@@ -316,7 +317,7 @@ int moveNumbers(BoardStatus &bs) {
 * draw the texture to a SDL_Renderer, with given scale.
 */
 void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst,
-	SDL_Rect *clip = nullptr) {
+	SDL_Rect *clip = NULL) {
 	SDL_RenderCopy(ren, tex, clip, &dst);
 }
 
@@ -324,11 +325,11 @@ void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst,
 * draw the texture to a SDL_Renderer withot scaling.
 */
 void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y,
-	SDL_Rect *clip = nullptr) {
+	SDL_Rect *clip = NULL) {
 	SDL_Rect dst;
 	dst.x = x;
 	dst.y = y;
-	if (clip != nullptr) {
+	if (clip != NULL) {
 		dst.w = clip->w;
 		dst.h = clip->h;
 	}
@@ -499,12 +500,18 @@ void renderGame(RenderSystem renderSystem, TileData numbers[4][4],
 		SDL_Delay(1);
 	}
 	//render score
-	SDL_Texture* scoreText = renderText(std::to_string(score),
+
+	std::ostringstream scoreString;
+	scoreString << score;
+	SDL_Texture* scoreText = renderText(scoreString.str(),
 		"./res/Gauge-Regular.ttf", color, 48, renderSystem.renderer);
 	renderTexture(scoreText, renderSystem.renderer, 500, 170, NULL); //the font is smaller than the tile
 
 	if (isGameOver == 1) {
-		color = { 150, 50, 50 };
+		//color = { 150, 50, 50 };
+		color.r = 150;
+		color.g = 50;
+		color.b = 50;
 		SDL_Texture* gameOverText = renderText("Game Over!", "./res/Gauge-Regular.ttf", color, 72, renderSystem.renderer);
 		renderTexture(gameOverText, renderSystem.renderer, 40, SCREEN_HEIGHT / 2 - 20, NULL); //the font is smaller than the tile
 	}
@@ -593,14 +600,14 @@ int main(int argc, char **argv) {
 
 	SDL_Window *win = SDL_CreateWindow("Lesson 2", 100, 100, SCREEN_WIDTH,
 		SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-	if (win == nullptr) {
+	if (win == NULL) {
 		logSDLError(std::cout, "SDL_CreateWindow");
 		return 1;
 	}
 
 	currentRS.renderer = SDL_CreateRenderer(win, -1,
 		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	if (currentRS.renderer == nullptr) {
+	if (currentRS.renderer == NULL) {
 		logSDLError(std::cout, "SDL_CreateRenderer");
 		return 1;
 	}
@@ -621,7 +628,7 @@ int main(int argc, char **argv) {
 	currentRS.numberTiles = loadTexture("./res/numbers.png",
 		currentRS.renderer);
 
-	if (currentRS.background == nullptr || currentRS.numberTiles == nullptr) {
+	if (currentRS.background == NULL || currentRS.numberTiles == NULL) {
 		logSDLError(std::cout, "LoadTexture");
 		return 4;
 	}
