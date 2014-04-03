@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <math.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>

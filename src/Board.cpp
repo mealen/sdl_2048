@@ -2,6 +2,7 @@
 #include <string>
 #include <cassert>
 #include <ctime>
+#include <stdlib.h> /* srand */
 
 #include "Board.h"
 
